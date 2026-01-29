@@ -47,7 +47,9 @@ class TaskFactory:
 
     @staticmethod
     def create_transcribe_task(
-        file_path: str, need_next_task: bool = False
+        file_path: str,
+        need_next_task: bool = False,
+        task_id: Optional[str] = None,
     ) -> TranscribeTask:
         """创建转录任务"""
         # 获取文件名
@@ -91,17 +93,23 @@ class TaskFactory:
             faster_whisper_prompt=cfg.faster_whisper_prompt.value,
         )
 
-        return TranscribeTask(
+        task = TranscribeTask(
             queued_at=datetime.datetime.now(),
             file_path=file_path,
             output_path=output_path,
             transcribe_config=config,
             need_next_task=need_next_task,
         )
+        if task_id:
+            task.task_id = task_id
+        return task
 
     @staticmethod
     def create_subtitle_task(
-        file_path: str, video_path: Optional[str] = None, need_next_task: bool = False
+        file_path: str,
+        video_path: Optional[str] = None,
+        need_next_task: bool = False,
+        task_id: Optional[str] = None,
     ) -> SubtitleTask:
         """创建字幕任务"""
         output_name = (
@@ -183,7 +191,7 @@ class TaskFactory:
             custom_prompt_text=cfg.custom_prompt_text.value,
         )
 
-        return SubtitleTask(
+        task = SubtitleTask(
             queued_at=datetime.datetime.now(),
             subtitle_path=file_path,
             video_path=video_path,
@@ -191,10 +199,16 @@ class TaskFactory:
             subtitle_config=config,
             need_next_task=need_next_task,
         )
+        if task_id:
+            task.task_id = task_id
+        return task
 
     @staticmethod
     def create_synthesis_task(
-        video_path: str, subtitle_path: str, need_next_task: bool = False
+        video_path: str,
+        subtitle_path: str,
+        need_next_task: bool = False,
+        task_id: Optional[str] = None,
     ) -> SynthesisTask:
         """创建视频合成任务"""
         if need_next_task:
@@ -206,17 +220,19 @@ class TaskFactory:
                 Path(video_path).parent / f"【卡卡】{Path(video_path).stem}.mp4"
             )
 
+        # 只有启用样式时才传入样式配置
+        use_style = cfg.use_subtitle_style.value
         config = SynthesisConfig(
             need_video=cfg.need_video.value,
             soft_subtitle=cfg.soft_subtitle.value,
             render_mode=cfg.subtitle_render_mode.value,
             video_quality=cfg.video_quality.value,
             subtitle_layout=cfg.subtitle_layout.value,
-            ass_style=TaskFactory.get_ass_style(cfg.subtitle_style_name.value),
-            rounded_style=TaskFactory.get_rounded_style(),
+            ass_style=TaskFactory.get_ass_style(cfg.subtitle_style_name.value) if use_style else "",
+            rounded_style=TaskFactory.get_rounded_style() if use_style else None,
         )
 
-        return SynthesisTask(
+        task = SynthesisTask(
             queued_at=datetime.datetime.now(),
             video_path=video_path,
             subtitle_path=subtitle_path,
@@ -224,6 +240,9 @@ class TaskFactory:
             synthesis_config=config,
             need_next_task=need_next_task,
         )
+        if task_id:
+            task.task_id = task_id
+        return task
 
     @staticmethod
     def create_transcript_and_subtitle_task(

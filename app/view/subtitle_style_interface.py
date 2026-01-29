@@ -29,10 +29,9 @@ from app.components.MySettingCard import (
     SpinBoxSettingCard,
 )
 from app.config import ASSETS_PATH, SUBTITLE_STYLE_PATH
-from app.core.subtitle import get_builtin_fonts
 from app.core.constant import INFOBAR_DURATION_SUCCESS, INFOBAR_DURATION_WARNING
 from app.core.entities import SubtitleLayoutEnum, SubtitleRenderModeEnum
-from app.core.subtitle import render_ass_preview, render_preview
+from app.core.subtitle import get_builtin_fonts, render_ass_preview, render_preview
 from app.core.subtitle.styles import RoundedBgStyle
 from app.core.utils.platform_utils import open_folder
 
@@ -681,6 +680,9 @@ class SubtitleStyleInterface(QWidget):
         )
         signalBus.subtitle_layout_changed.connect(self.on_subtitle_layout_changed)
 
+        # 连接渲染模式信号（从视频合成界面同步）
+        signalBus.subtitle_render_mode_changed.connect(self.on_render_mode_changed_external)
+
     def on_open_style_folder_clicked(self):
         """打开样式文件夹"""
         open_folder(str(SUBTITLE_STYLE_PATH))
@@ -690,11 +692,23 @@ class SubtitleStyleInterface(QWidget):
         cfg.subtitle_layout.value = layout_enum
         self.layoutCard.setCurrentText(layout)
 
+    def on_render_mode_changed_external(self, mode_text: str):
+        """处理外部渲染模式变更（从视频合成界面同步）"""
+        # 避免信号循环：阻断信号后再更新
+        self.renderModeCard.comboBox.blockSignals(True)
+        self.renderModeCard.comboBox.setCurrentText(mode_text)
+        self.renderModeCard.comboBox.blockSignals(False)
+        # 手动触发 UI 更新
+        self._updateVisibleGroups()
+        self._refreshStyleList()
+        self.updatePreview()
+
     def onRenderModeChanged(self):
-        """渲染模式切换"""
+        """渲染模式切换（本界面触发）"""
         mode_text = self.renderModeCard.comboBox.currentText()
         mode = SubtitleRenderModeEnum(mode_text)
         cfg.set(cfg.subtitle_render_mode, mode)
+        signalBus.subtitle_render_mode_changed.emit(mode_text)
         self._updateVisibleGroups()
         self._refreshStyleList()
         self.updatePreview()
@@ -759,6 +773,9 @@ class SubtitleStyleInterface(QWidget):
         ext = self._getStyleFileExtension()
         pattern = f"*{ext}"
 
+        # 阻断信号，避免 addItems/setCurrentText 重复触发 loadStyle
+        self.styleNameComboBox.comboBox.blockSignals(True)
+
         # 清空现有列表
         self.styleNameComboBox.comboBox.clear()
 
@@ -778,10 +795,15 @@ class SubtitleStyleInterface(QWidget):
         subtitle_style_name = cfg.get(cfg.subtitle_style_name)
         if subtitle_style_name in style_files:
             self.styleNameComboBox.comboBox.setCurrentText(subtitle_style_name)
-            self.loadStyle(subtitle_style_name)
         else:
             self.styleNameComboBox.comboBox.setCurrentText(style_files[0])
-            self.loadStyle(style_files[0])
+            subtitle_style_name = style_files[0]
+
+        # 恢复信号
+        self.styleNameComboBox.comboBox.blockSignals(False)
+
+        # 只调用一次 loadStyle
+        self.loadStyle(subtitle_style_name)
 
     def _getCurrentRenderMode(self) -> SubtitleRenderModeEnum:
         """获取当前渲染模式"""

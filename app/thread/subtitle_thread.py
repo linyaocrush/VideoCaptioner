@@ -13,6 +13,7 @@ from app.core.entities import (
     TranslatorServiceEnum,
 )
 from app.core.llm.check_llm import check_llm_connection
+from app.core.llm.context import clear_task_context, set_task_context, update_stage
 from app.core.optimize.optimize import SubtitleOptimizer
 from app.core.split.split import SubtitleSplitter
 from app.core.translate import (
@@ -69,6 +70,16 @@ class SubtitleThread(QThread):
             raise Exception(self.tr("LLM API 未配置, 请检查LLM配置"))
 
     def run(self):
+        # 设置任务上下文
+        task_file = (
+            Path(self.task.video_path) if self.task.video_path else Path(self.task.subtitle_path)
+        )
+        set_task_context(
+            task_id=self.task.task_id,
+            file_name=task_file.name,
+            stage="subtitle",
+        )
+
         try:
             logger.info(f"\n{self.task.subtitle_config.print_config()}")
 
@@ -93,6 +104,7 @@ class SubtitleThread(QThread):
 
             # 2. 重新断句（对于字词级字幕）
             if asr_data.is_word_timestamp():
+                update_stage("split")
                 self.progress.emit(5, self.tr("字幕断句..."))
                 logger.info("正在字幕断句...")
                 splitter = SubtitleSplitter(
@@ -105,10 +117,12 @@ class SubtitleThread(QThread):
                 self.update_all.emit(asr_data.to_json())
 
             # 3. 优化字幕
-            custom_prompt = subtitle_config.custom_prompt_text
+            context_info = f'The subtitles below are from a file named "{task_file}". Use this context to improve accuracy if needed.\n'
+            custom_prompt = context_info + (subtitle_config.custom_prompt_text or "") + "\n"
             self.subtitle_length = len(asr_data.segments)
 
             if subtitle_config.need_optimize:
+                update_stage("optimize")
                 self.progress.emit(0, self.tr("优化字幕..."))
                 logger.info("正在优化字幕...")
                 self.finished_subtitle_length = 0
@@ -127,6 +141,7 @@ class SubtitleThread(QThread):
 
             # 4. 翻译字幕
             if subtitle_config.need_translate:
+                update_stage("translate")
                 self.progress.emit(0, self.tr("翻译字幕..."))
                 logger.info("正在翻译字幕...")
                 self.finished_subtitle_length = 0
@@ -163,9 +178,7 @@ class SubtitleThread(QThread):
                         update_callback=self.callback,
                     )
                 elif translator_service == TranslatorServiceEnum.DEEPLX:
-                    os.environ["DEEPLX_ENDPOINT"] = (
-                        subtitle_config.deeplx_endpoint or ""
-                    )
+                    os.environ["DEEPLX_ENDPOINT"] = subtitle_config.deeplx_endpoint or ""
                     translator = DeepLXTranslator(
                         thread_num=subtitle_config.thread_num,
                         batch_num=5,
@@ -200,8 +213,7 @@ class SubtitleThread(QThread):
             asr_data.save(
                 save_path=self.task.output_path or "",
                 ass_style=subtitle_config.subtitle_style or "",
-                layout=subtitle_config.subtitle_layout
-                or SubtitleLayoutEnum.ONLY_TRANSLATE,
+                layout=subtitle_config.subtitle_layout or SubtitleLayoutEnum.ONLY_TRANSLATE,
             )
             logger.info(f"字幕保存到 {self.task.output_path}")
 
@@ -209,16 +221,14 @@ class SubtitleThread(QThread):
             if self.task.need_next_task and self.task.video_path:
                 # 保存srt/ass文件到视频目录（对于全流程任务）
                 save_srt_path = (
-                    Path(self.task.video_path).parent
-                    / f"{Path(self.task.video_path).stem}.srt"
+                    Path(self.task.video_path).parent / f"{Path(self.task.video_path).stem}.srt"
                 )
                 asr_data.to_srt(
                     save_path=str(save_srt_path),
                     layout=subtitle_config.subtitle_layout,
                 )
                 save_ass_path = (
-                    Path(self.task.video_path).parent
-                    / f"{Path(self.task.video_path).stem}.ass"
+                    Path(self.task.video_path).parent / f"{Path(self.task.video_path).stem}.ass"
                 )
                 asr_data.to_ass(
                     save_path=str(save_ass_path),
@@ -234,6 +244,8 @@ class SubtitleThread(QThread):
             logger.exception(f"字幕处理失败: {str(e)}")
             self.error.emit(str(e))
             self.progress.emit(100, self.tr("字幕处理失败"))
+        finally:
+            clear_task_context()
 
     def need_llm(self, subtitle_config: SubtitleConfig, asr_data: ASRData):
         return (
@@ -253,15 +265,11 @@ class SubtitleThread(QThread):
     def callback(self, result: List[SubtitleProcessData]):
         self.finished_subtitle_length += len(result)
         # 简单计算当前进度（0-100%）
-        progress = min(
-            int((self.finished_subtitle_length / self.subtitle_length) * 100), 100
-        )
+        progress = min(int((self.finished_subtitle_length / self.subtitle_length) * 100), 100)
         self.progress.emit(progress, self.tr("{0}% 处理字幕").format(progress))
         # 转换为字典格式供UI使用
         result_dict = {
-            str(data.index): data.translated_text
-            or data.optimized_text
-            or data.original_text
+            str(data.index): data.translated_text or data.optimized_text or data.original_text
             for data in result
         }
         self.update.emit(result_dict)
