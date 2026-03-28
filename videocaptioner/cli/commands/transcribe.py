@@ -28,7 +28,11 @@ def run(args: Namespace, config: dict) -> int:
             out.mkdir(parents=True, exist_ok=True)
             output_path = str(out / f"{input_path.stem}.{out_fmt}")
         else:
-            output_path = args.output
+            # Auto-append format extension if no extension given
+            if not out.suffix:
+                output_path = f"{args.output}.{out_fmt}"
+            else:
+                output_path = args.output
     else:
         output_path = str(input_path.with_suffix(f".{out_fmt}"))
 
@@ -103,6 +107,11 @@ def run(args: Namespace, config: dict) -> int:
         whisper_api_prompt=get(config, "whisper_api.prompt", ""),
     )
 
+    # Suppress internal logger noise in quiet mode
+    if quiet:
+        import logging
+        logging.getLogger().setLevel(logging.WARNING)
+
     # Progress callback
     progress = None if quiet else output.ProgressLine(f"Transcribing [{asr_engine}]").start()
 
@@ -111,8 +120,38 @@ def run(args: Namespace, config: dict) -> int:
             progress.update(pct, f"Transcribing [{asr_engine}] {msg}")
 
     try:
+        # Auto-convert video to audio if needed
+        audio_path = str(input_path)
+        temp_audio = None
+        audio_formats = {"flac", "m4a", "mp3", "wav", "ogg", "opus", "aac", "wma"}
+        video_formats = {"mp4", "mkv", "avi", "mov", "webm", "flv", "wmv", "ts", "m4v", "mpg", "mpeg"}
+        ext = input_path.suffix.lstrip(".").lower()
+
+        if ext not in audio_formats:
+            if ext not in video_formats:
+                output.error(f"Unsupported file format: .{ext}")
+                output.hint("Supported audio: " + ", ".join(sorted(audio_formats)))
+                output.hint("Supported video: " + ", ".join(sorted(video_formats)))
+                return EXIT.FILE_NOT_FOUND
+
+            if verbose:
+                output.info("Input is a video file, extracting audio...")
+            import tempfile
+
+            from videocaptioner.core.utils.video_utils import video2audio
+            temp_audio = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+            temp_audio.close()
+            if not video2audio(str(input_path), output=temp_audio.name):
+                # Check if the temp file is empty (no audio track)
+                if os.path.getsize(temp_audio.name) == 0:
+                    output.error("Input video has no audio track")
+                else:
+                    output.error("Failed to extract audio from video. Is FFmpeg installed?")
+                return EXIT.RUNTIME_ERROR
+            audio_path = temp_audio.name
+
         from videocaptioner.core.asr import transcribe
-        asr_data = transcribe(str(input_path), transcribe_config, callback=callback)
+        asr_data = transcribe(audio_path, transcribe_config, callback=callback)
 
         # Save output
         asr_data.save(save_path=output_path)
@@ -133,3 +172,9 @@ def run(args: Namespace, config: dict) -> int:
             import traceback
             traceback.print_exc()
         return EXIT.RUNTIME_ERROR
+    finally:
+        if temp_audio is not None:
+            try:
+                os.unlink(temp_audio.name)
+            except OSError:
+                pass
