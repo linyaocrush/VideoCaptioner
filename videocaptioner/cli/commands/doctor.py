@@ -145,7 +145,7 @@ def _check_subtitle(config: dict) -> list[Check]:
 def _check_dubbing(config: dict) -> list[Check]:
     checks: list[Check] = []
     preset_name = get(config, "dubbing.preset", "")
-    provider = get(config, "dubbing.provider", "siliconflow")
+    provider = get(config, "dubbing.provider", "edge")
     model = get(config, "dubbing.model", "")
     voice = get(config, "dubbing.voice", "")
     if preset_name:
@@ -158,11 +158,11 @@ def _check_dubbing(config: dict) -> list[Check]:
         except ValueError as exc:
             checks.append(Check("dubbing.preset", "error", str(exc), "Choose one of the presets shown in 'videocaptioner dub --help'"))
     else:
-        checks.append(Check("dubbing.preset", "warn", "No dubbing preset configured", "Run 'videocaptioner config set dubbing.preset siliconflow-cn-female'"))
-    if not get(config, "dubbing.api_key", ""):
+        checks.append(Check("dubbing.preset", "warn", "No dubbing preset configured", "Run 'videocaptioner config set dubbing.preset edge-cn-female'"))
+    if provider != "edge" and not get(config, "dubbing.api_key", ""):
         checks.append(Check("dubbing.api_key", "warn", "Dubbing TTS API key is missing", "Run 'videocaptioner config set dubbing.api_key <key>'"))
-    if provider not in {"siliconflow", "gemini"}:
-        checks.append(Check("dubbing.provider", "error", f"Unsupported provider: {provider}", "Use siliconflow or gemini"))
+    if provider not in {"siliconflow", "gemini", "edge"}:
+        checks.append(Check("dubbing.provider", "error", f"Unsupported provider: {provider}", "Use siliconflow, gemini, or edge"))
     normalized_voice = normalize_dubbing_voice(provider, model, voice)
     voice_error = validate_dubbing_voice(provider, normalized_voice)
     if voice_error:

@@ -40,6 +40,7 @@ hiddenimports = [
     "PyQt5.sip",
     "openai",
     "requests",
+    "edge_tts",
     "diskcache",
     "yt_dlp",
     "modelscope",

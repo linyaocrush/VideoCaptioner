@@ -197,6 +197,25 @@ class TestDubParser:
 
         assert result == EXIT.USAGE_ERROR
 
+    def test_edge_clone_fails_before_synthesis_without_api_key(self, tmp_path):
+        srt = tmp_path / "test.srt"
+        srt.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello\n", encoding="utf-8")
+        ref = tmp_path / "ref.wav"
+        ref.write_bytes(b"not real audio")
+
+        result = main([
+            "dub",
+            str(srt),
+            "--preset",
+            "edge-cn-female",
+            "--clone-audio",
+            str(ref),
+            "--clone-text",
+            "Hello",
+        ])
+
+        assert result == EXIT.USAGE_ERROR
+
 
 class TestConfigParser:
     def test_no_action(self):
@@ -235,7 +254,7 @@ class TestConfigParser:
         assert result == EXIT.SUCCESS
         out = capsys.readouterr().out
         assert "[dubbing]" in out
-        assert "siliconflow-cn-female" in out
+        assert "edge-cn-female" in out
         assert "audio_mode" in out
 
 
