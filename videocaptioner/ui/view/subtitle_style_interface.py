@@ -533,39 +533,38 @@ class SubtitleStyleInterface(QWidget):
         self.styleNameComboBox.comboBox.setCurrentText(cfg.get(cfg.subtitle_style_name))
 
         # 获取字体列表（内置字体 + 系统字体）
-        builtin_fonts = get_builtin_fonts()
-        builtin_font_names = [f["name"] for f in builtin_fonts]
+        builtin_font_names = [f["name"] for f in get_builtin_fonts()]
 
         fontDatabase = QFontDatabase()
         fontFamilies = fontDatabase.families()
 
-        # 过滤系统字体：
-        # 1. 排除私有字体（以 . 开头）
-        # 2. 排除已有的内置字体
-        # 3. 只保留 PIL 能实际加载的字体（用于圆角背景渲染）
-        system_fonts = []
+        # ASS 模式：FFmpeg 渲染，显示所有系统字体
+        ass_system_fonts = [
+            f for f in fontFamilies
+            if not f.startswith(".") and f not in builtin_font_names
+        ]
+        ass_all_fonts = builtin_font_names + sorted(ass_system_fonts)
+
+        # 圆角背景模式：PIL 渲染，只保留 PIL 能加载的字体
+        pil_system_fonts = []
         for font_name in fontFamilies:
             if font_name.startswith(".") or font_name in builtin_font_names:
                 continue
-            # 测试 PIL 是否能加载此字体
             try:
-                ImageFont.truetype(font_name, 12)  # 测试用小尺寸
-                system_fonts.append(font_name)
+                ImageFont.truetype(font_name, 12)
+                pil_system_fonts.append(font_name)
             except (OSError, IOError):
-                # PIL 无法加载，跳过此字体
                 pass
-
-        # 合并字体列表：内置字体在最前面
-        all_fonts = builtin_font_names + sorted(system_fonts)
+        rounded_all_fonts = builtin_font_names + sorted(pil_system_fonts)
 
         # ASS 模式字体
-        self.assPrimaryFontCard.addItems(all_fonts)
-        self.assSecondaryFontCard.addItems(all_fonts)
+        self.assPrimaryFontCard.addItems(ass_all_fonts)
+        self.assSecondaryFontCard.addItems(ass_all_fonts)
         self.assPrimaryFontCard.comboBox.setMaxVisibleItems(12)
         self.assSecondaryFontCard.comboBox.setMaxVisibleItems(12)
 
         # 圆角背景模式字体
-        self.roundedFontCard.addItems(all_fonts)
+        self.roundedFontCard.addItems(rounded_all_fonts)
         self.roundedFontCard.comboBox.setMaxVisibleItems(12)
 
         # 设置圆角背景模式的初始值
