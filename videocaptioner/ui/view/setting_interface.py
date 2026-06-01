@@ -1,14 +1,18 @@
+import json
 import webbrowser
 
 from PyQt5.QtCore import Qt, QThread, QUrl, pyqtSignal
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QFileDialog, QLabel, QWidget
 from qfluentwidgets import (
+    BodyLabel,
     ComboBoxSettingCard,
     CustomColorSettingCard,
     ExpandLayout,
     HyperlinkCard,
     InfoBar,
+    LineEdit,
+    MessageBoxBase,
     OptionsSettingCard,
     PrimaryPushSettingCard,
     PushSettingCard,
@@ -42,6 +46,7 @@ class SettingInterface(ScrollArea):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
+        self._profile_loading = False  # 加载 profile 时阻止字段变更回调
         self.setWindowTitle(self.tr("设置"))
         self.scrollWidget = QWidget()
         self.expandLayout = ExpandLayout(self.scrollWidget)
@@ -414,6 +419,44 @@ class SettingInterface(ScrollArea):
                 "model": model_card,
             }
 
+        # --- OpenAI 配置管理（一行：下拉 + 添加/删除/重命名） ---
+        from qfluentwidgets import ComboBox, SettingCard, ToolButton
+
+        self.openaiProfilesCard = SettingCard(
+            FIF.SAVE,
+            self.tr("配置管理"),
+            self.tr("保存和切换不同的 OpenAI 兼容服务配置"),
+            parent=self.llmGroup,
+        )
+        self.openaiProfilesCard.comboBox = ComboBox(self.openaiProfilesCard)
+        self.openaiProfilesCard.comboBox.setMinimumWidth(150)
+
+        self.openaiAddProfileBtn = ToolButton(FIF.ADD, self.openaiProfilesCard)
+        self.openaiAddProfileBtn.setToolTip(self.tr("创建新配置"))
+        self.openaiDeleteProfileBtn = ToolButton(FIF.DELETE, self.openaiProfilesCard)
+        self.openaiDeleteProfileBtn.setToolTip(self.tr("删除配置"))
+        self.openaiRenameProfileBtn = ToolButton(FIF.EDIT, self.openaiProfilesCard)
+        self.openaiRenameProfileBtn.setToolTip(self.tr("重命名配置"))
+
+        hBoxLayout = self.openaiProfilesCard.hBoxLayout
+        hBoxLayout.addWidget(self.openaiProfilesCard.comboBox, 1, Qt.AlignRight)
+        hBoxLayout.addSpacing(6)
+        hBoxLayout.addWidget(self.openaiAddProfileBtn)
+        hBoxLayout.addSpacing(4)
+        hBoxLayout.addWidget(self.openaiDeleteProfileBtn)
+        hBoxLayout.addSpacing(4)
+        hBoxLayout.addWidget(self.openaiRenameProfileBtn)
+        hBoxLayout.addSpacing(16)
+
+        self.openai_profile_cards = [self.openaiProfilesCard]
+
+        # 将 profile 卡片插入 OpenAI 卡片列表最前面
+        openai_cfg = self.llm_service_configs[LLMServiceEnum.OPENAI]
+        openai_cfg["cards"] = self.openai_profile_cards + openai_cfg["cards"]
+
+        # 加载已保存的 profiles，首次使用时从现有设置迁移
+        self._load_profiles()
+
         # 创建检查连接卡片
         self.checkLLMConnectionCard = PushSettingCard(
             self.tr("检查连接"),
@@ -632,6 +675,20 @@ class SettingInterface(ScrollArea):
         self.llmServiceCard.comboBox.currentTextChanged.connect(
             self.__onLLMServiceChanged
         )
+
+        # OpenAI 配置管理
+        self.openaiProfilesCard.comboBox.currentTextChanged.connect(
+            self._onOpenaiProfileChanged
+        )
+        self.openaiAddProfileBtn.clicked.connect(self._onAddOpenaiProfile)
+        self.openaiDeleteProfileBtn.clicked.connect(self._onDeleteOpenaiProfile)
+        self.openaiRenameProfileBtn.clicked.connect(self._onRenameOpenaiProfile)
+
+        # OpenAI 字段变更时自动保存到当前 profile
+        openai_cfg = self.llm_service_configs[LLMServiceEnum.OPENAI]
+        openai_cfg["api_key"].lineEdit.textChanged.connect(self._onOpenaiFieldChanged)
+        openai_cfg["api_base"].lineEdit.textChanged.connect(self._onOpenaiFieldChanged)
+        openai_cfg["model"].comboBox.currentTextChanged.connect(self._onOpenaiFieldChanged)
 
         # 翻译服务切换
         self.translatorServiceCard.comboBox.currentTextChanged.connect(
@@ -860,6 +917,144 @@ class SettingInterface(ScrollArea):
         self.llmGroup.adjustSize()
         self.expandLayout.update()
 
+    # --- OpenAI Profile 管理 ---
+
+    def _load_profiles(self):
+        """加载 profiles 配置，首次使用时从现有 OpenAI 设置迁移"""
+        raw = cfg.get(cfg.openai_profiles)
+        self._profiles = json.loads(raw) if raw and raw != "{}" else {}
+        self._profile_loading = True
+
+        if not self._profiles:
+            # 首次迁移：用现有 OpenAI 设置创建默认配置
+            api_key = cfg.get(cfg.openai_api_key)
+            api_base = cfg.get(cfg.openai_api_base)
+            model = cfg.get(cfg.openai_model)
+            self._profiles = {
+                "默认": {"api_key": api_key, "api_base": api_base, "model": model}
+            }
+            self._save_profiles()
+            cfg.set(cfg.openai_active_profile, "默认")
+        elif not cfg.get(cfg.openai_active_profile):
+            cfg.set(cfg.openai_active_profile, next(iter(self._profiles)))
+
+        self.openaiProfilesCard.comboBox.clear()
+        self.openaiProfilesCard.comboBox.addItems(list(self._profiles.keys()))
+        self.openaiProfilesCard.comboBox.setCurrentText(cfg.get(cfg.openai_active_profile))
+        self._profile_loading = False
+
+        self._load_active_profile()
+
+    def _onOpenaiProfileChanged(self, name):
+        """切换 profile 时加载对应配置到字段"""
+        if self._profile_loading:
+            return
+        if name not in self._profiles:
+            return
+        cfg.set(cfg.openai_active_profile, name)
+        self._load_active_profile()
+
+    def _load_active_profile(self):
+        """将当前 profile 的配置写入 3 个 OpenAI 字段"""
+        name = cfg.get(cfg.openai_active_profile)
+        p = self._profiles.get(name)
+        if not p:
+            return
+        self._profile_loading = True
+        openai_cfg = self.llm_service_configs[LLMServiceEnum.OPENAI]
+        openai_cfg["api_key"].lineEdit.setText(p.get("api_key", ""))
+        openai_cfg["api_base"].lineEdit.setText(p.get("api_base", ""))
+        openai_cfg["model"].comboBox.setCurrentText(p.get("model", ""))
+        self._profile_loading = False
+
+    def _onOpenaiFieldChanged(self):
+        """OpenAI 字段变更时自动保存到当前 profile"""
+        if self._profile_loading:
+            return
+        name = cfg.get(cfg.openai_active_profile)
+        if not name or name not in self._profiles:
+            return
+        openai_cfg = self.llm_service_configs[LLMServiceEnum.OPENAI]
+        self._profiles[name] = {
+            "api_key": openai_cfg["api_key"].lineEdit.text(),
+            "api_base": openai_cfg["api_base"].lineEdit.text(),
+            "model": openai_cfg["model"].comboBox.currentText(),
+        }
+        self._save_profiles()
+
+    def _save_profiles(self):
+        """持久化 profiles 到配置"""
+        cfg.set(cfg.openai_profiles, json.dumps(self._profiles, ensure_ascii=False))
+
+    def _onAddOpenaiProfile(self):
+        """添加新配置：弹出输入框"""
+        dialog = _ProfileNameDialog(
+            self.tr("添加配置"), self.tr("输入配置名称"), parent=self
+        )
+        if not dialog.exec():
+            return
+        name = dialog.nameLineEdit.text().strip()
+        if not name:
+            return
+        if name in self._profiles:
+            InfoBar.warning(
+                self.tr("提示"),
+                self.tr(f'配置 "{name}" 已存在'),
+                parent=self,
+            )
+            return
+        self._profiles[name] = {"api_key": "", "api_base": "https://api.openai.com/v1", "model": ""}
+        self._save_profiles()
+        self.openaiProfilesCard.comboBox.addItem(name)
+        self.openaiProfilesCard.comboBox.setCurrentText(name)
+
+    def _onDeleteOpenaiProfile(self):
+        """删除当前选中的配置"""
+        name = cfg.get(cfg.openai_active_profile)
+        if not name:
+            return
+        if len(self._profiles) <= 1:
+            InfoBar.warning(
+                self.tr("提示"),
+                self.tr("至少保留一个配置"),
+                parent=self,
+            )
+            return
+        del self._profiles[name]
+        self._save_profiles()
+        self.openaiProfilesCard.comboBox.removeItem(
+            self.openaiProfilesCard.comboBox.findText(name)
+        )
+        new_name = next(iter(self._profiles))
+        cfg.set(cfg.openai_active_profile, new_name)
+        self.openaiProfilesCard.comboBox.setCurrentText(new_name)
+
+    def _onRenameOpenaiProfile(self):
+        """重命名当前选中的配置"""
+        old_name = cfg.get(cfg.openai_active_profile)
+        if not old_name or old_name not in self._profiles:
+            return
+        dialog = _ProfileNameDialog(
+            self.tr("重命名配置"), self.tr("输入新名称"), parent=self, default_text=old_name
+        )
+        if not dialog.exec():
+            return
+        new_name = dialog.nameLineEdit.text().strip()
+        if not new_name or new_name == old_name:
+            return
+        if new_name in self._profiles:
+            InfoBar.warning(
+                self.tr("提示"),
+                self.tr(f'配置 "{new_name}" 已存在'),
+                parent=self,
+            )
+            return
+        self._profiles[new_name] = self._profiles.pop(old_name)
+        self._save_profiles()
+        idx = self.openaiProfilesCard.comboBox.findText(old_name)
+        self.openaiProfilesCard.comboBox.setItemText(idx, new_name)
+        cfg.set(cfg.openai_active_profile, new_name)
+
     def __onTranslatorServiceChanged(self, service):
         openai_cards = [
             self.needReflectTranslateCard,
@@ -1035,3 +1230,27 @@ class LLMConnectionThread(QThread):
             self.finished.emit(is_success, message, models)
         except Exception as e:
             self.error.emit(str(e))
+
+
+class _ProfileNameDialog(MessageBoxBase):
+    """Fluent 风格的配置名输入弹窗"""
+
+    def __init__(self, title: str, placeholder: str, parent=None, default_text: str = ""):
+        super().__init__(parent)
+        self.titleLabel = BodyLabel(title, self)
+        self.nameLineEdit = LineEdit(self)
+        self.nameLineEdit.setPlaceholderText(placeholder)
+        self.nameLineEdit.setClearButtonEnabled(True)
+        if default_text:
+            self.nameLineEdit.setText(default_text)
+
+        self.viewLayout.addWidget(self.titleLabel)
+        self.viewLayout.addWidget(self.nameLineEdit)
+
+        self.yesButton.setText(self.tr("确定"))
+        self.cancelButton.setText(self.tr("取消"))
+        self.widget.setMinimumWidth(350)
+        self.yesButton.setDisabled(not default_text.strip())
+        self.nameLineEdit.textChanged.connect(
+            lambda t: self.yesButton.setEnabled(bool(t.strip()))
+        )
