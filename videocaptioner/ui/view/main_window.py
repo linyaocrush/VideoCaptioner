@@ -124,18 +124,19 @@ class MainWindow(FluentWindow):
         w = MessageBox(
             self.tr("GitHub信息"),
             self.tr(
-                "VideoCaptioner 由本人在课余时间独立开发完成，目前托管在GitHub上，欢迎Star和Fork。项目诚然还有很多地方需要完善，遇到软件的问题或者BUG欢迎提交Issue。\n\n https://github.com/WEIFENG2333/VideoCaptioner"
+                "本版本由 凛ふわ狐 基于原版修改，感谢原作者 Weifeng 的开发。\n"
+                "原版项目：https://github.com/WEIFENG2333/VideoCaptioner\n"
+                "本版本：https://github.com/linyaocrush/VideoCaptioner\n\n"
+                "欢迎 Star、Fork 和提交 Issue。"
             ),
             self,
         )
+        w.setClosableOnMaskClicked(True)
         w.yesButton.setText(self.tr("打开 GitHub"))
-        w.cancelButton.setText(self.tr("支持作者"))
-        if w.exec():
-            QDesktopServices.openUrl(QUrl(GITHUB_REPO_URL))
-        else:
-            # 点击"支持作者"按钮时打开捐赠对话框
-            donate_dialog = DonateDialog(self)
-            donate_dialog.exec_()
+        w.cancelButton.setText(self.tr("支持原作者"))
+        w.yesButton.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(GITHUB_REPO_URL)))
+        w.cancelButton.clicked.connect(lambda: DonateDialog(self).exec_())
+        w.exec()
 
     def onNewVersion(self, version, update_required, update_info, download_url):
         """新版本提示"""

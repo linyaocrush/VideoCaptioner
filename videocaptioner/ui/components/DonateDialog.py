@@ -16,7 +16,7 @@ class DonateDialog(MessageBoxBase):
         self.ALIPAY_QR_PATH = os.path.join(ASSETS_PATH, "donate_blue.jpg")
 
         self.setup_ui()
-        self.setWindowTitle(self.tr("支持作者"))
+        self.setWindowTitle(self.tr("支持原作者"))
 
     def setup_ui(self):
         # 创建标题标签

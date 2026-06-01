@@ -15,7 +15,7 @@ APP_NAME = "VideoCaptioner"
 AUTHOR = "Weifeng"
 
 HELP_URL = "https://github.com/WEIFENG2333/VideoCaptioner"
-GITHUB_REPO_URL = "https://github.com/WEIFENG2333/VideoCaptioner"
+GITHUB_REPO_URL = "https://github.com/linyaocrush/VideoCaptioner"
 RELEASE_URL = "https://github.com/WEIFENG2333/VideoCaptioner/releases/latest"
 FEEDBACK_URL = "https://github.com/WEIFENG2333/VideoCaptioner/issues"
 

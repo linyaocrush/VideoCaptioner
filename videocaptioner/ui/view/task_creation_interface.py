@@ -175,7 +175,7 @@ class TaskCreationInterface(QWidget):
         )
 
         # 创建捐助按钮
-        self.donate_button = HyperlinkButton(url="", text=self.tr("捐助"), parent=self)
+        self.donate_button = HyperlinkButton(url="", text=self.tr("捐助原作者"), parent=self)
         self.donate_button.setStyleSheet(
             self.donate_button.styleSheet()
             + """
@@ -189,7 +189,7 @@ class TaskCreationInterface(QWidget):
 
         # 添加版权信息标签
         self.info_label = BodyLabel(
-            self.tr(f"©VideoCaptioner {VERSION} • By Weifeng"), self
+            self.tr(f"©VideoCaptioner {VERSION} · By Weifeng · Modified by 凛ふわ狐"), self
         )
         self.info_label.setAlignment(Qt.AlignCenter)  # type: ignore
         self.info_label.setStyleSheet("font-size: 12px; color: #888888;")
