@@ -1,146 +1,162 @@
 <div align="center">
-  <img src="./docs/images/logo.png" alt="VideoCaptioner Logo" width="100">
+  <img src="./docs/images/logo.png" alt="VideoCaptioner Logo" width="120">
   <h1>VideoCaptioner</h1>
-  <p>基于大语言模型的视频字幕处理工具 — 语音识别、字幕优化、翻译、视频合成一站式处理</p>
+  <p><strong>基于大语言模型的视频字幕处理工具</strong></p>
+  <p>语音识别 · 字幕优化 · 智能翻译 · 视频合成 — 一站式处理</p>
+  <br>
 
-  [在线文档](https://weifeng2333.github.io/VideoCaptioner/) · [CLI 使用](#cli-命令行) · [GUI 桌面版](#gui-桌面版) · [Claude Code Skill](#claude-code-skill)
+  <a href="https://github.com/WEIFENG2333/VideoCaptioner"><img src="https://img.shields.io/badge/基于-WEIFENG2333%2FVideoCaptioner-2ea44f?style=for-the-badge&logo=github&logoColor=white" alt="上游原版"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue?style=for-the-badge" alt="License"></a>
+  <a href="https://github.com/linyaocrush/VideoCaptioner/stargazers"><img src="https://img.shields.io/github/stars/linyaocrush/VideoCaptioner?style=for-the-badge&logo=github&logoColor=white" alt="Stars"></a>
+  <a href="https://github.com/linyaocrush/VideoCaptioner/issues"><img src="https://img.shields.io/github/issues/linyaocrush/VideoCaptioner?style=for-the-badge&logo=github&logoColor=white" alt="Issues"></a>
+
+  <br><br>
+
+  <table>
+    <td align="center"><a href="https://github.com/WEIFENG2333/VideoCaptioner/blob/master/README.md">查看上游原版 README</a></td>
+  </table>
 </div>
 
-## 安装
+<br>
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><img src="https://h1.appinn.me/file/1731487410170_preview1.png" width="420"></td>
+      <td align="center"><img src="https://h1.appinn.me/file/1731487410832_preview2.png" width="420"></td>
+    </tr>
+  </table>
+</div>
+
+<br>
+
+## 本版本改进
+
+> 基于 [WEIFENG2333/VideoCaptioner](https://github.com/WEIFENG2333/VideoCaptioner) 的个人修改版本，以下为本版本独有功能。
+
+<table>
+  <tr>
+    <td width="240" align="center"><b>ASS 字幕支持系统字体</b></td>
+    <td>ASS 渲染模式的字体下拉框现在显示所有系统安装的字体，不再局限于内置字体。圆角背景模式保留 PIL 可用性验证。</td>
+  </tr>
+  <tr>
+    <td width="240" align="center"><b>OpenAI 多配置管理</b></td>
+    <td>设置页 LLM 配置新增「配置管理」下拉框，支持保存、切换、重命名多个 OpenAI 兼容服务商配置，切换时自动填充 API Key / Base URL / Model。</td>
+  </tr>
+</table>
+
+<br>
+
+## 快速开始
+
+### 安装
 
 ```bash
-pip install videocaptioner          # 安装 CLI + GUI 桌面版
+git clone https://github.com/linyaocrush/VideoCaptioner.git
+cd VideoCaptioner
+uv sync
 ```
 
-免费功能（必剪语音识别、必应/谷歌翻译）**无需任何配置，安装即用**。
+### 运行
+
+```bash
+uv run videocaptioner                 # 启动桌面版 GUI
+uv run videocaptioner --help          # 查看 CLI 帮助
+```
+
+> 免费功能（必剪语音识别、必应/谷歌翻译）**无需任何配置，安装即用**。
+
+<br>
 
 ## CLI 命令行
 
 ```bash
 # 语音转录（免费，无需 API Key）
-videocaptioner transcribe video.mp4 --asr bijian
+uv run videocaptioner transcribe video.mp4 --asr bijian
 
 # 字幕翻译（免费必应翻译）
-videocaptioner subtitle input.srt --translator bing --target-language en
+uv run videocaptioner subtitle input.srt --translator bing --target-language en
 
 # 全流程：转录 → 优化 → 翻译 → 合成
-videocaptioner process video.mp4 --target-language ja
+uv run videocaptioner process video.mp4 --target-language ja
 
 # 字幕烧录到视频
-videocaptioner synthesize video.mp4 -s subtitle.srt
+uv run videocaptioner synthesize video.mp4 -s subtitle.srt
 
 # 下载在线视频
-videocaptioner download "https://youtube.com/watch?v=xxx"
+uv run videocaptioner download "https://youtube.com/watch?v=xxx"
 ```
-
-需要 LLM 功能（字幕优化、大模型翻译）时，配置 API Key：
-
-```bash
-videocaptioner config set llm.api_key <your-key>
-videocaptioner config set llm.api_base https://api.openai.com/v1
-videocaptioner config set llm.model gpt-4o-mini
-```
-
-配置优先级：`命令行参数 > 环境变量 (VIDEOCAPTIONER_*) > 配置文件 > 默认值`。运行 `videocaptioner config show` 查看当前配置。
 
 <details>
-<summary>所有 CLI 命令一览</summary>
+<summary><b>所有 CLI 命令一览</b></summary>
+
+<br>
 
 | 命令 | 说明 |
 |------|------|
-| `gui` | 打开桌面版。也可以直接运行 `videocaptioner-gui` |
-| `transcribe` | 语音转字幕。引擎：`faster-whisper`、`whisper-api`、`bijian`（免费）、`jianying`（免费）、`whisper-cpp` |
-| `subtitle` | 字幕优化/翻译。翻译服务：`llm`、`bing`（免费）、`google`（免费） |
+| `gui` | 打开桌面版 |
+| `transcribe` | 语音转字幕（`faster-whisper` `whisper-api` `bijian` `jianying` `whisper-cpp`） |
+| `subtitle` | 字幕优化/翻译（`llm` `bing` `google`） |
 | `dub` | 根据字幕生成配音音轨或配音视频 |
 | `synthesize` | 字幕烧录到视频（软字幕/硬字幕） |
 | `process` | 全流程处理 |
 | `download` | 下载 YouTube、B站等平台视频 |
-| `config` | 配置管理（`show`、`set`、`get`、`path`、`init`） |
+| `config` | 配置管理（`show` `set` `get` `path` `init`） |
 
-运行 `videocaptioner <命令> --help` 查看完整参数。完整 CLI 文档见 [docs/cli.md](docs/cli.md)。
-
-</details>
-
-## GUI 桌面版
-
-```bash
-pip install videocaptioner
-videocaptioner-gui                  # 显式打开桌面版
-videocaptioner gui                  # 等价命令
-videocaptioner                      # 无参数时也会打开桌面版
-```
-
-<details>
-<summary>其他安装方式：Windows 安装包 / macOS 一键脚本</summary>
-
-**Windows**：从 [Release](https://github.com/WEIFENG2333/VideoCaptioner/releases) 下载安装包
-
-**macOS**：
-```bash
-curl -fsSL https://raw.githubusercontent.com/WEIFENG2333/VideoCaptioner/master/scripts/run.sh | bash
-```
+运行 `uv run videocaptioner <命令> --help` 查看完整参数。
 
 </details>
 
-
-<!-- <div align="center">
-  <img src="https://h1.appinn.me/file/1731487405884_main.png" alt="界面预览" width="90%" style="border-radius: 5px;">
-</div> -->
-
-![页面预览](https://h1.appinn.me/file/1731487410170_preview1.png)
-![页面预览](https://h1.appinn.me/file/1731487410832_preview2.png)
+<br>
 
 ## LLM API 配置
 
-LLM 仅用于字幕优化和大模型翻译，免费功能（必剪识别、必应翻译）无需配置。
-
-支持所有 OpenAI 兼容接口的服务商：
+LLM 仅用于字幕优化和大模型翻译，免费功能无需配置。支持所有 OpenAI 兼容接口的服务商：
 
 | 服务商 | 官网 |
 |--------|------|
-| **VideoCaptioner 中转站** | [api.videocaptioner.cn](https://api.videocaptioner.cn) — 高并发，性价比高，支持 GPT/Claude/Gemini 等 |
 | SiliconCloud | [cloud.siliconflow.cn](https://cloud.siliconflow.cn/i/HF95kaoz) |
 | DeepSeek | [platform.deepseek.com](https://platform.deepseek.com) |
 
-在软件设置或 CLI 中填入 API Base URL 和 API Key 即可。[详细配置教程](https://weifeng2333.github.io/VideoCaptioner/config/llm)
+在软件设置中选择 **OpenAI 兼容**，填入 API Base URL 和 API Key。可使用「配置管理」保存多个服务商配置，一键切换。
 
-## Claude Code Skill
-
-本项目提供了 [Claude Code Skill](https://code.claude.com/docs/en/skills.md)，让 AI 编程助手可以直接调用 VideoCaptioner 处理视频。
-
-安装到 Claude Code：
+需要 LLM 功能时 CLI 配置：
 
 ```bash
-mkdir -p ~/.claude/skills/videocaptioner
-cp skills/SKILL.md ~/.claude/skills/videocaptioner/SKILL.md
+uv run videocaptioner config set llm.api_key <your-key>
+uv run videocaptioner config set llm.api_base https://api.openai.com/v1
+uv run videocaptioner config set llm.model gpt-4o-mini
 ```
 
-然后在 Claude Code 中输入 `/videocaptioner transcribe video.mp4 --asr bijian` 即可使用。
-
-## 工作原理
-
-```
-音视频输入 → 语音识别 → 字幕断句 → LLM 优化 → 翻译 → 视频合成
-```
-
-- 词级时间戳 + VAD 语音活动检测，识别准确率高
-- LLM 语义理解断句，字幕阅读体验自然流畅
-- 上下文感知翻译，支持反思优化机制
-- 批量并发处理，效率高
+<br>
 
 ## 开发
 
 ```bash
-git clone https://github.com/WEIFENG2333/VideoCaptioner.git
-cd VideoCaptioner
-uv sync && uv run videocaptioner     # 运行 GUI
-uv run videocaptioner --help          # 运行 CLI
-uv run pyright                        # 类型检查
-uv run pytest tests/test_cli/ -q      # 运行测试
+# 安装依赖
+uv sync
+
+# 运行
+uv run videocaptioner                      # GUI
+uv run videocaptioner --help               # CLI
+
+# 代码检查
+uv run ruff check videocaptioner/          # Lint
+uv run pyright                             # 类型检查
+
+# 测试
+uv run pytest tests/test_cli/ -q           # CLI 测试
+uv run pytest tests/ -q                    # 全部测试
+
+# 构建
+uv build                                   # Python 包
+python scripts/build_desktop.py            # 桌面安装包 (PyInstaller)
 ```
 
-## 许可证
+<br>
 
-[GPL-3.0](LICENSE)
+<div align="center">
 
-[![Star History Chart](https://api.star-history.com/svg?repos=WEIFENG2333/VideoCaptioner&type=Date)](https://star-history.com/#WEIFENG2333/VideoCaptioner&Date)
+**[GPL-3.0](LICENSE)**
+
+</div>
