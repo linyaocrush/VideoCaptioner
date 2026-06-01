@@ -1,7 +1,7 @@
 import json
 import webbrowser
 
-from PyQt5.QtCore import Qt, QThread, QUrl, pyqtSignal
+from PyQt5.QtCore import Qt, QThread, QTimer, QUrl, pyqtSignal
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QFileDialog, QLabel, QWidget
 from qfluentwidgets import (
@@ -47,6 +47,10 @@ class SettingInterface(ScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self._profile_loading = False  # 加载 profile 时阻止字段变更回调
+        self._profile_save_timer = QTimer(self)
+        self._profile_save_timer.setSingleShot(True)
+        self._profile_save_timer.setInterval(300)
+        self._profile_save_timer.timeout.connect(self._save_profiles)
         self.setWindowTitle(self.tr("设置"))
         self.scrollWidget = QWidget()
         self.expandLayout = ExpandLayout(self.scrollWidget)
@@ -922,7 +926,10 @@ class SettingInterface(ScrollArea):
     def _load_profiles(self):
         """加载 profiles 配置，首次使用时从现有 OpenAI 设置迁移"""
         raw = cfg.get(cfg.openai_profiles)
-        self._profiles = json.loads(raw) if raw and raw != "{}" else {}
+        try:
+            self._profiles = json.loads(raw) if raw and raw != "{}" else {}
+        except json.JSONDecodeError:
+            self._profiles = {}
         self._profile_loading = True
 
         if not self._profiles:
@@ -961,14 +968,16 @@ class SettingInterface(ScrollArea):
         if not p:
             return
         self._profile_loading = True
-        openai_cfg = self.llm_service_configs[LLMServiceEnum.OPENAI]
-        openai_cfg["api_key"].lineEdit.setText(p.get("api_key", ""))
-        openai_cfg["api_base"].lineEdit.setText(p.get("api_base", ""))
-        openai_cfg["model"].comboBox.setCurrentText(p.get("model", ""))
-        self._profile_loading = False
+        try:
+            openai_cfg = self.llm_service_configs[LLMServiceEnum.OPENAI]
+            openai_cfg["api_key"].lineEdit.setText(p.get("api_key", ""))
+            openai_cfg["api_base"].lineEdit.setText(p.get("api_base", ""))
+            openai_cfg["model"].comboBox.setCurrentText(p.get("model", ""))
+        finally:
+            self._profile_loading = False
 
     def _onOpenaiFieldChanged(self):
-        """OpenAI 字段变更时自动保存到当前 profile"""
+        """OpenAI 字段变更时自动保存到当前 profile（debounce 300ms）"""
         if self._profile_loading:
             return
         name = cfg.get(cfg.openai_active_profile)
@@ -980,7 +989,7 @@ class SettingInterface(ScrollArea):
             "api_base": openai_cfg["api_base"].lineEdit.text(),
             "model": openai_cfg["model"].comboBox.currentText(),
         }
-        self._save_profiles()
+        self._profile_save_timer.start()
 
     def _save_profiles(self):
         """持久化 profiles 到配置"""
@@ -999,7 +1008,7 @@ class SettingInterface(ScrollArea):
         if name in self._profiles:
             InfoBar.warning(
                 self.tr("提示"),
-                self.tr(f'配置 "{name}" 已存在'),
+                self.tr('配置 "{}" 已存在').format(name),
                 parent=self,
             )
             return
@@ -1022,12 +1031,14 @@ class SettingInterface(ScrollArea):
             return
         del self._profiles[name]
         self._save_profiles()
+        self._profile_loading = True
         self.openaiProfilesCard.comboBox.removeItem(
             self.openaiProfilesCard.comboBox.findText(name)
         )
         new_name = next(iter(self._profiles))
         cfg.set(cfg.openai_active_profile, new_name)
         self.openaiProfilesCard.comboBox.setCurrentText(new_name)
+        self._profile_loading = False
 
     def _onRenameOpenaiProfile(self):
         """重命名当前选中的配置"""
@@ -1045,7 +1056,7 @@ class SettingInterface(ScrollArea):
         if new_name in self._profiles:
             InfoBar.warning(
                 self.tr("提示"),
-                self.tr(f'配置 "{new_name}" 已存在'),
+                self.tr('配置 "{}" 已存在').format(new_name),
                 parent=self,
             )
             return
