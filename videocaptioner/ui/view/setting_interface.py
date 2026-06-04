@@ -12,6 +12,7 @@ from qfluentwidgets import (
     HyperlinkCard,
     InfoBar,
     LineEdit,
+    MessageBox,
     MessageBoxBase,
     OptionsSettingCard,
     PrimaryPushSettingCard,
@@ -206,8 +207,6 @@ class SettingInterface(ScrollArea):
         )
         self.clearCacheCard.setVisible(cfg.cache_enabled.value)
         self.__refreshCacheSize()
-        # 高度与其他卡片统一
-        self.clearCacheCard.setFixedHeight(62)
         self.themeCard = OptionsSettingCard(
             cfg.themeMode,
             FIF.BRUSH,
@@ -822,8 +821,6 @@ class SettingInterface(ScrollArea):
 
     def __onClearCache(self):
         """清理缓存"""
-        from qfluentwidgets import MessageBox
-
         box = MessageBox(self.tr("清理缓存"), self.tr("确定要清除所有业务缓存吗？"), self)
         if box.exec():
             clear_all_cache()

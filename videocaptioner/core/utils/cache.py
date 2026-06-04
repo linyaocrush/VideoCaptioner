@@ -32,10 +32,11 @@ def disable_cache() -> None:
 
 def clear_all_cache() -> None:
     """Clear all business caches (ASR, translate, TTS, LLM)."""
-    _llm_cache.clear()
-    _asr_cache.clear()
-    _tts_cache.clear()
-    _translate_cache.clear()
+    for cache in (_llm_cache, _asr_cache, _tts_cache, _translate_cache):
+        try:
+            cache.clear()
+        except Exception:
+            pass
 
 
 def get_cache_size() -> int:
