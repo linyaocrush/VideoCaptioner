@@ -30,6 +30,36 @@ def disable_cache() -> None:
     _cache_enabled = False
 
 
+def clear_all_cache() -> None:
+    """Clear all business caches (ASR, translate, TTS, LLM)."""
+    _llm_cache.clear()
+    _asr_cache.clear()
+    _tts_cache.clear()
+    _translate_cache.clear()
+
+
+def get_cache_size() -> int:
+    """Return total size in bytes of all business caches."""
+    return (
+        _llm_cache.volume()
+        + _asr_cache.volume()
+        + _tts_cache.volume()
+        + _translate_cache.volume()
+    )
+
+
+def format_cache_size(size_bytes: int) -> str:
+    """Format bytes to human-readable size string."""
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    elif size_bytes < 1024 * 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+    else:
+        return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
+
+
 def is_cache_enabled() -> bool:
     """Check if caching is enabled."""
     return _cache_enabled

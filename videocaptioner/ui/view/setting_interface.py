@@ -34,7 +34,13 @@ from videocaptioner.core.constant import (
 from videocaptioner.core.entities import LLMServiceEnum, TranscribeModelEnum, TranslatorServiceEnum
 from videocaptioner.core.llm import check_whisper_connection
 from videocaptioner.core.llm.check_llm import check_llm_connection, get_available_models
-from videocaptioner.core.utils.cache import disable_cache, enable_cache
+from videocaptioner.core.utils.cache import (
+    clear_all_cache,
+    disable_cache,
+    enable_cache,
+    format_cache_size,
+    get_cache_size,
+)
 from videocaptioner.ui.common.config import cfg
 from videocaptioner.ui.common.signal_bus import signalBus
 from videocaptioner.ui.components.EditComboBoxSettingCard import EditComboBoxSettingCard
@@ -189,8 +195,19 @@ class SettingInterface(ScrollArea):
             self.tr("启用缓存"),
             self.tr("相同配置下会复用之前的 ASR 和 LLM 结果；关闭缓存后每次重新生成"),
             cfg.cache_enabled,
-            self.personalGroup,
+            self.saveGroup,
         )
+        self.clearCacheCard = PushSettingCard(
+            self.tr("清理缓存"),
+            FIF.DELETE,
+            self.tr("清理缓存"),
+            "",
+            self.saveGroup,
+        )
+        self.clearCacheCard.setVisible(cfg.cache_enabled.value)
+        self.__refreshCacheSize()
+        # 高度与其他卡片统一
+        self.clearCacheCard.setFixedHeight(62)
         self.themeCard = OptionsSettingCard(
             cfg.themeMode,
             FIF.BRUSH,
@@ -266,6 +283,7 @@ class SettingInterface(ScrollArea):
         self.saveGroup.addSettingCard(self.savePathCard)
         self.saveGroup.addSettingCard(self.subtitleSaveFormatCard)
         self.saveGroup.addSettingCard(self.cacheEnabledCard)
+        self.saveGroup.addSettingCard(self.clearCacheCard)
 
         self.personalGroup.addSettingCard(self.themeCard)
         self.personalGroup.addSettingCard(self.themeColorCard)
@@ -732,6 +750,7 @@ class SettingInterface(ScrollArea):
 
         # 个性化
         self.cacheEnabledCard.checkedChanged.connect(self.__onCacheEnabledChanged)
+        self.clearCacheCard.clicked.connect(self.__onClearCache)
         self.themeCard.optionChanged.connect(lambda ci: setTheme(cfg.get(ci)))
         self.themeColorCard.colorChanged.connect(setThemeColor)
 
@@ -781,6 +800,9 @@ class SettingInterface(ScrollArea):
 
     def __onCacheEnabledChanged(self, is_enabled: bool):
         """处理缓存开关变化"""
+        self.clearCacheCard.setVisible(is_enabled)
+        self.saveGroup.adjustSize()
+        self.scrollWidget.adjustSize()
         if is_enabled:
             enable_cache()
             InfoBar.success(
@@ -797,6 +819,28 @@ class SettingInterface(ScrollArea):
                 duration=INFOBAR_DURATION_WARNING,
                 parent=self,
             )
+
+    def __onClearCache(self):
+        """清理缓存"""
+        from qfluentwidgets import MessageBox
+
+        box = MessageBox(self.tr("清理缓存"), self.tr("确定要清除所有业务缓存吗？"), self)
+        if box.exec():
+            clear_all_cache()
+            self.__refreshCacheSize()
+            InfoBar.success(
+                self.tr("缓存已清理"),
+                self.tr("ASR、翻译、TTS 和 LLM 缓存已清除"),
+                duration=INFOBAR_DURATION_SUCCESS,
+                parent=self,
+            )
+
+    def __refreshCacheSize(self):
+        """刷新缓存大小显示"""
+        size = get_cache_size()
+        self.clearCacheCard.setContent(
+            self.tr("当前缓存占用：") + format_cache_size(size) if size else self.tr("暂无缓存")
+        )
 
     def checkLLMConnection(self):
         """检查 LLM 连接"""
