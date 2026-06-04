@@ -201,7 +201,7 @@ class SettingInterface(ScrollArea):
         self.clearCacheCard = PushSettingCard(
             self.tr("清理缓存"),
             FIF.DELETE,
-            self.tr("清理缓存"),
+            self.tr("将清除 ASR、翻译、TTS 和 LLM 缓存"),
             "",
             self.saveGroup,
         )
