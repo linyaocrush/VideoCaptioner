@@ -43,6 +43,10 @@
     <td width="240" align="center"><b>OpenAI 多配置管理</b></td>
     <td>设置页 LLM 配置新增「配置管理」下拉框，支持保存、切换、重命名多个 OpenAI 兼容服务商配置，切换时自动填充 API Key / Base URL / Model。</td>
   </tr>
+  <tr>
+    <td width="240" align="center"><b>字幕保存格式可选</b></td>
+    <td>设置页「保存配置」新增「字幕保存格式」选项，全流程处理完成后可选择仅保存 SRT、仅保存 ASS 或两者都保存。默认两者都保存。</td>
+  </tr>
 </table>
 
 <br>

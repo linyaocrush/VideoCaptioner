@@ -152,6 +152,14 @@ class VadMethodEnum(Enum):
     AUDITOK = "auditok"  # 实际上这不是 VAD，而是 AAD - 音频活动检测
 
 
+class SubtitleSaveFormatEnum(Enum):
+    """字幕保存格式"""
+
+    SRT_ONLY = "仅 SRT"
+    ASS_ONLY = "仅 ASS"
+    BOTH = "SRT + ASS"
+
+
 class SubtitleLayoutEnum(Enum):
     """字幕布局"""
 
@@ -639,6 +647,7 @@ class SubtitleConfig:
     batch_size: int = 10
     # 字幕布局和分割
     subtitle_layout: SubtitleLayoutEnum = SubtitleLayoutEnum.ORIGINAL_ON_TOP
+    save_format: SubtitleSaveFormatEnum = SubtitleSaveFormatEnum.BOTH
     max_word_count_cjk: int = 12
     max_word_count_english: int = 18
     need_split: bool = True

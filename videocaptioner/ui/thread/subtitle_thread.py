@@ -9,6 +9,7 @@ from videocaptioner.core.entities import (
     SubtitleConfig,
     SubtitleLayoutEnum,
     SubtitleProcessData,
+    SubtitleSaveFormatEnum,
     SubtitleTask,
     TranslatorServiceEnum,
 )
@@ -211,22 +212,25 @@ class SubtitleThread(QThread):
 
             # 6. 文件移动与清理
             if self.task.need_next_task and self.task.video_path:
-                # 保存srt/ass文件到视频目录（对于全流程任务）
-                save_srt_path = (
-                    Path(self.task.video_path).parent / f"{Path(self.task.video_path).stem}.srt"
-                )
-                asr_data.to_srt(
-                    save_path=str(save_srt_path),
-                    layout=subtitle_config.subtitle_layout,
-                )
-                save_ass_path = (
-                    Path(self.task.video_path).parent / f"{Path(self.task.video_path).stem}.ass"
-                )
-                asr_data.to_ass(
-                    save_path=str(save_ass_path),
-                    layout=subtitle_config.subtitle_layout,
-                    style_str=subtitle_config.subtitle_style,
-                )
+                # 根据用户配置保存字幕文件到视频目录
+                save_format = subtitle_config.save_format
+                if save_format in (SubtitleSaveFormatEnum.SRT_ONLY, SubtitleSaveFormatEnum.BOTH):
+                    save_srt_path = (
+                        Path(self.task.video_path).parent / f"{Path(self.task.video_path).stem}.srt"
+                    )
+                    asr_data.to_srt(
+                        save_path=str(save_srt_path),
+                        layout=subtitle_config.subtitle_layout,
+                    )
+                if save_format in (SubtitleSaveFormatEnum.ASS_ONLY, SubtitleSaveFormatEnum.BOTH):
+                    save_ass_path = (
+                        Path(self.task.video_path).parent / f"{Path(self.task.video_path).stem}.ass"
+                    )
+                    asr_data.to_ass(
+                        save_path=str(save_ass_path),
+                        layout=subtitle_config.subtitle_layout,
+                        style_str=subtitle_config.subtitle_style,
+                    )
 
             self.progress.emit(100, self.tr("优化完成"))
             logger.info("优化完成")

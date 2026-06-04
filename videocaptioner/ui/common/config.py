@@ -24,6 +24,7 @@ from videocaptioner.core.entities import (
     LLMServiceEnum,
     SubtitleLayoutEnum,
     SubtitleRenderModeEnum,
+    SubtitleSaveFormatEnum,
     TranscribeLanguageEnum,
     TranscribeModelEnum,
     TranscribeOutputFormatEnum,
@@ -302,6 +303,13 @@ class Config(QConfig):
 
     # ------------------- 保存配置 -------------------
     work_dir = ConfigItem("Save", "Work_Dir", WORK_PATH, FolderValidator())
+    subtitle_save_format = OptionsConfigItem(
+        "Save",
+        "SubtitleSaveFormat",
+        SubtitleSaveFormatEnum.BOTH,
+        OptionsValidator(SubtitleSaveFormatEnum),
+        EnumSerializer(SubtitleSaveFormatEnum),
+    )
 
     # ------------------- 软件页面配置 -------------------
     micaEnabled = ConfigItem("MainWindow", "MicaEnabled", False, BoolValidator())

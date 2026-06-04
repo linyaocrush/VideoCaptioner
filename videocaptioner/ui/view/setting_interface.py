@@ -174,6 +174,14 @@ class SettingInterface(ScrollArea):
             cfg.get(cfg.work_dir),
             self.saveGroup,
         )
+        self.subtitleSaveFormatCard = ComboBoxSettingCard(
+            cfg.subtitle_save_format,
+            FIF.DOCUMENT,
+            self.tr("字幕保存格式"),
+            self.tr("全流程处理完成后保存到视频旁的字幕文件格式"),
+            texts=[fmt.value for fmt in cfg.subtitle_save_format.validator.options],  # type: ignore
+            parent=self.saveGroup,
+        )
 
         # 个性化配置卡片
         self.cacheEnabledCard = SwitchSettingCard(
@@ -256,6 +264,7 @@ class SettingInterface(ScrollArea):
         self.subtitleGroup.addSettingCard(self.videoQualityCard)
 
         self.saveGroup.addSettingCard(self.savePathCard)
+        self.saveGroup.addSettingCard(self.subtitleSaveFormatCard)
         self.saveGroup.addSettingCard(self.cacheEnabledCard)
 
         self.personalGroup.addSettingCard(self.themeCard)
