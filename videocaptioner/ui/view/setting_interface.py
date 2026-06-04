@@ -205,11 +205,10 @@ class SettingInterface(ScrollArea):
             "",
             self.saveGroup,
         )
-        self._cacheDescLabel = QLabel(self.tr("将清除 ASR、翻译、TTS 和 LLM 缓存"))
+        self._cacheDescLabel = QLabel(self.tr("将清除 ASR、翻译、TTS 和 LLM 缓存"), self.clearCacheCard)
         self._cacheDescLabel.setObjectName("contentLabel")
         self.clearCacheCard.vBoxLayout.insertWidget(1, self._cacheDescLabel)
-        self.clearCacheCard.contentLabel.show()
-        self.clearCacheCard.setFixedHeight(70)
+        self.clearCacheCard.setMinimumHeight(70)
         self.clearCacheCard.setVisible(cfg.cache_enabled.value)
         self.__refreshCacheSize()
         self.themeCard = OptionsSettingCard(
