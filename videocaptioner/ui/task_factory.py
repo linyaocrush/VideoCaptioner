@@ -93,6 +93,10 @@ class TaskFactory:
             faster_whisper_ff_mdx_kim2=cfg.faster_whisper_ff_mdx_kim2.value,
             faster_whisper_one_word=cfg.faster_whisper_one_word.value,
             faster_whisper_prompt=cfg.faster_whisper_prompt.value,
+            # FunASR 配置
+            fun_asr_api_key=cfg.fun_asr_api_key.value,
+            fun_asr_api_base=cfg.fun_asr_api_base.value,
+            fun_asr_model=cfg.fun_asr_model.value,
         )
 
         task = TranscribeTask(

@@ -564,6 +564,36 @@ class SettingInterface(ScrollArea):
         self.whisperApiModelCard.setVisible(False)
         self.checkWhisperConnectionCard.setVisible(False)
 
+        # FunASR 配置卡片
+        self.funAsrApiKeyCard = LineEditSettingCard(
+            cfg.fun_asr_api_key,
+            FIF.FINGERPRINT,
+            self.tr("FunASR API Key"),
+            self.tr("输入阿里云百炼 API Key（支持环境变量 DASHSCOPE_API_KEY）"),
+            "sk-",
+            self.transcribeGroup,
+        )
+        self.funAsrApiBaseCard = LineEditSettingCard(
+            cfg.fun_asr_api_base,
+            FIF.LINK,
+            self.tr("FunASR API Base URL"),
+            self.tr("输入阿里云百炼 API Base URL"),
+            "https://dashscope.aliyuncs.com",
+            self.transcribeGroup,
+        )
+        self.funAsrModelCard = EditComboBoxSettingCard(
+            cfg.fun_asr_model,
+            FIF.ROBOT,
+            self.tr("FunASR 模型"),
+            self.tr("选择或输入 FunASR 模型名称"),
+            ["fun-asr", "fun-asr-v2"],
+            self.transcribeGroup,
+        )
+        # 默认隐藏 FunASR 配置卡片
+        self.funAsrApiKeyCard.setVisible(False)
+        self.funAsrApiBaseCard.setVisible(False)
+        self.funAsrModelCard.setVisible(False)
+
     def __createTranslateServiceCards(self):
         """创建翻译服务相关的配置卡片"""
         # 翻译服务选择卡片
@@ -679,6 +709,11 @@ class SettingInterface(ScrollArea):
         self.transcribeGroup.addSettingCard(self.whisperApiKeyCard)
         self.transcribeGroup.addSettingCard(self.whisperApiModelCard)
         self.transcribeGroup.addSettingCard(self.checkWhisperConnectionCard)
+
+        # 添加 FunASR 配置卡片
+        self.transcribeGroup.addSettingCard(self.funAsrApiKeyCard)
+        self.transcribeGroup.addSettingCard(self.funAsrApiBaseCard)
+        self.transcribeGroup.addSettingCard(self.funAsrModelCard)
 
         # 添加LLM配置卡片
         self.llmGroup.addSettingCard(self.llmServiceCard)
@@ -1153,10 +1188,21 @@ class SettingInterface(ScrollArea):
             self.checkWhisperConnectionCard,
         ]
 
-        # 根据选择的模型显示/隐藏 Whisper API 配置
+        # FunASR 配置卡片
+        fun_asr_cards = [
+            self.funAsrApiKeyCard,
+            self.funAsrApiBaseCard,
+            self.funAsrModelCard,
+        ]
+
+        # 根据选择的模型显示/隐藏各自的配置
         is_whisper_api = model_name == TranscribeModelEnum.WHISPER_API.value
         for card in whisper_api_cards:
             card.setVisible(is_whisper_api)
+
+        is_fun_asr = model_name == TranscribeModelEnum.FUN_ASR.value
+        for card in fun_asr_cards:
+            card.setVisible(is_fun_asr)
 
         # 更新布局
         self.transcribeGroup.adjustSize()

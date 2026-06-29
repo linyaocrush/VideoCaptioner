@@ -223,6 +223,11 @@ class Config(QConfig):
     whisper_api_model = OptionsConfigItem("WhisperAPI", "WhisperApiModel", "")
     whisper_api_prompt = ConfigItem("WhisperAPI", "WhisperApiPrompt", "")
 
+    # ------------------- FunASR 配置 -------------------
+    fun_asr_api_key = ConfigItem("FunASR", "ApiKey", "")
+    fun_asr_api_base = ConfigItem("FunASR", "ApiBase", "https://dashscope.aliyuncs.com")
+    fun_asr_model = ConfigItem("FunASR", "Model", "fun-asr")
+
     # ------------------- 字幕配置 -------------------
     need_optimize = ConfigItem("Subtitle", "NeedOptimize", False, BoolValidator())
     need_translate = ConfigItem("Subtitle", "NeedTranslate", False, BoolValidator())
