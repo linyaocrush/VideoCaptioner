@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (
 )
 from qfluentwidgets import (
     Action,
+    BodyLabel,
     ComboBox,
     InfoBar,
     InfoBarPosition,
@@ -39,6 +40,7 @@ from videocaptioner.core.entities import (
     SupportedVideoFormats,
 )
 from videocaptioner.core.utils.platform_utils import open_folder
+from videocaptioner.ui.common.config import cfg
 from videocaptioner.ui.thread.batch_process_thread import (
     BatchProcessThread,
     BatchTask,
@@ -84,12 +86,23 @@ class BatchProcessInterface(QWidget):
         self.start_all_btn = PushButton(self.tr("开始处理"), icon=FIF.PLAY)
         self.clear_btn = PushButton(self.tr("清空列表"), icon=FIF.DELETE)
 
+        # 并发数选择
+        self.concurrency_label = BodyLabel(self.tr("并发数:"))
+        self.concurrency_combo = ComboBox()
+        self.concurrency_combo.addItems(["1", "2", "3"])
+        self.concurrency_combo.setCurrentText(str(cfg.batch_concurrency.value))
+        self.concurrency_combo.setMinimumWidth(60)
+
         # 添加到顶部布局
         top_layout.addWidget(self.task_type_combo)
         top_layout.addWidget(self.add_file_btn)
         top_layout.addWidget(self.clear_btn)
 
         top_layout.addStretch()
+
+        top_layout.addWidget(self.concurrency_label)
+        top_layout.addWidget(self.concurrency_combo)
+        top_layout.addSpacing(10)
         top_layout.addWidget(self.start_all_btn)
 
         # 创建任务表格
@@ -130,6 +143,7 @@ class BatchProcessInterface(QWidget):
         self.start_all_btn.clicked.connect(self.start_all_tasks)
         self.clear_btn.clicked.connect(self.clear_tasks)
         self.task_type_combo.currentTextChanged.connect(self.on_task_type_changed)
+        self.concurrency_combo.currentTextChanged.connect(self._on_concurrency_changed)
 
     def setup_connections(self):
         # 批处理线程信号连接
@@ -373,8 +387,21 @@ class BatchProcessInterface(QWidget):
                 self.task_table.item(row, 2).setForeground(QColor("#13A10E"))
                 break
 
+    def _on_concurrency_changed(self, text: str):
+        """并发数变更"""
+        try:
+            concurrency = int(text)
+            cfg.set(cfg.batch_concurrency, concurrency)
+            self.batch_thread.max_concurrent_tasks = concurrency
+        except ValueError:
+            pass
+
     def start_all_tasks(self):
-        # 检查是否有任务
+        # 更新并发数
+        try:
+            self.batch_thread.max_concurrent_tasks = int(self.concurrency_combo.currentText())
+        except ValueError:
+            pass
         if self.task_table.rowCount() == 0:
             InfoBar.warning(
                 title="无任务",

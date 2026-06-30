@@ -342,6 +342,9 @@ class Config(QConfig):
         EnumSerializer(SubtitleSaveFormatEnum),
     )
 
+    # ------------------- 批量处理配置 -------------------
+    batch_concurrency = RangeConfigItem("Batch", "Concurrency", 1, RangeValidator(1, 3))
+
     # ------------------- 软件页面配置 -------------------
     micaEnabled = ConfigItem("MainWindow", "MicaEnabled", False, BoolValidator())
     dpiScale = OptionsConfigItem(
