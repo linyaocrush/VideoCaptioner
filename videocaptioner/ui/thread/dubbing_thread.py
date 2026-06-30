@@ -1,34 +1,34 @@
 """配音处理后台线程"""
 
+from __future__ import annotations
+
 import datetime
 from pathlib import Path
 
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
 
 from videocaptioner.core.dubbing import (
     DubbingPipeline,
-    SpeakerProfile,
     build_dubbing_config,
 )
 from videocaptioner.core.entities import SynthesisTask
 from videocaptioner.core.utils.logger import setup_logger
 
+from .worker import WorkerCancelled, WorkerThread
+
 logger = setup_logger("dubbing_thread")
 
 
-class DubbingThread(QThread):
+class DubbingThread(WorkerThread):
     """配音处理线程，异步执行配音流水线"""
 
     finished = pyqtSignal(SynthesisTask)
-    progress = pyqtSignal(int, str)
-    error = pyqtSignal(str)
 
     def __init__(self, task: SynthesisTask):
         super().__init__()
         self.task = task
-        self._cancel_requested = False
 
-    def run(self):
+    def _work(self) -> None:
         try:
             self.task.started_at = datetime.datetime.now()
             config = self.task.synthesis_config
@@ -65,8 +65,7 @@ class DubbingThread(QThread):
             pipeline = DubbingPipeline(dubbing_config)
 
             def progress_callback(value, message):
-                if self._cancel_requested:
-                    raise InterruptedError("配音已取消")
+                self.checkpoint()
                 self.progress.emit(value, message)
 
             result = pipeline.run(
@@ -80,13 +79,9 @@ class DubbingThread(QThread):
             self.progress.emit(100, "配音完成")
             self.finished.emit(self.task)
 
-        except InterruptedError:
+        except WorkerCancelled:
             logger.info("配音已取消")
             self.progress.emit(0, "已取消")
         except Exception as e:
             logger.exception("配音处理失败")
             self.error.emit(str(e))
-
-    def request_cancel(self):
-        """请求取消配音"""
-        self._cancel_requested = True
