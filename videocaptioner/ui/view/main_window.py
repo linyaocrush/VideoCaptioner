@@ -70,11 +70,11 @@ class MainWindow(FluentWindow):
         """初始化导航栏"""
         # 添加导航项
         self.addSubInterface(self.homeInterface, FIF.HOME, self.tr("主页"))
-        self.addSubInterface(self.dubbingInterface, FIF.VOLUME, self.tr("配音"))
         self.addSubInterface(self.batchProcessInterface, FIF.VIDEO, self.tr("批量处理"))
-        self.addSubInterface(self.subtitleStyleInterface, FIF.FONT, self.tr("字幕样式"))
+        self.addSubInterface(self.subtitleStyleInterface, FIF.FONT, self.tr("字幕样式配置"))
+        self.addSubInterface(self.dubbingInterface, FIF.VOLUME, self.tr("配音设置"))
         self.addSubInterface(self.doctorInterface, FIF.CONNECT, self.tr("诊断"))
-        self.addSubInterface(self.llmLogsInterface, FIF.HISTORY, self.tr("请求日志"))
+        self.addSubInterface(self.llmLogsInterface, FIF.HISTORY, self.tr("LLM日志"))
 
         self.navigationInterface.addSeparator()
 
