@@ -1,4 +1,5 @@
 from .bcut import BcutASR
+from .check import TranscribeCheckResult, check_transcribe
 from .chunked_asr import ChunkedASR
 from .faster_whisper import FasterWhisperASR
 from .fun_asr import BailianFunASR
@@ -18,4 +19,6 @@ __all__ = [
     "WhisperCppASR",
     "transcribe",
     "ASRStatus",
+    "check_transcribe",
+    "TranscribeCheckResult",
 ]
