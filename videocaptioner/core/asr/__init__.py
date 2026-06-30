@@ -1,6 +1,7 @@
 from .bcut import BcutASR
 from .check import TranscribeCheckResult, check_transcribe
 from .chunked_asr import ChunkedASR
+from .deepgram_asr import DeepgramASR
 from .faster_whisper import FasterWhisperASR
 from .fun_asr import BailianFunASR
 from .jianying import JianYingASR
@@ -12,6 +13,7 @@ from .whisper_cpp import WhisperCppASR
 __all__ = [
     "BcutASR",
     "ChunkedASR",
+    "DeepgramASR",
     "FasterWhisperASR",
     "BailianFunASR",
     "JianYingASR",

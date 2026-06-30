@@ -97,6 +97,16 @@ class TaskFactory:
             fun_asr_api_key=cfg.fun_asr_api_key.value,
             fun_asr_api_base=cfg.fun_asr_api_base.value,
             fun_asr_model=cfg.fun_asr_model.value,
+            # Deepgram 配置
+            deepgram_api_key=cfg.deepgram_api_key.value,
+            deepgram_model=cfg.deepgram_model.value,
+            deepgram_punctuate=cfg.deepgram_punctuate.value,
+            deepgram_smart_format=cfg.deepgram_smart_format.value,
+            deepgram_diarize=cfg.deepgram_diarize.value,
+            deepgram_paragraphs=cfg.deepgram_paragraphs.value,
+            deepgram_utterances=cfg.deepgram_utterances.value,
+            deepgram_filler_words=cfg.deepgram_filler_words.value,
+            deepgram_numerals=cfg.deepgram_numerals.value,
         )
 
         task = TranscribeTask(

@@ -228,6 +228,20 @@ class Config(QConfig):
     fun_asr_api_base = ConfigItem("FunASR", "ApiBase", "https://dashscope.aliyuncs.com")
     fun_asr_model = ConfigItem("FunASR", "Model", "fun-asr")
 
+    # ------------------- Deepgram 配置 -------------------
+    deepgram_api_key = ConfigItem("Deepgram", "ApiKey", "")
+    deepgram_model = OptionsConfigItem(
+        "Deepgram", "Model", "nova-2",
+        OptionsValidator(["nova-2", "nova-3", "base-general", "whisper"]),
+    )
+    deepgram_punctuate = ConfigItem("Deepgram", "Punctuate", True, BoolValidator())
+    deepgram_smart_format = ConfigItem("Deepgram", "SmartFormat", True, BoolValidator())
+    deepgram_diarize = ConfigItem("Deepgram", "Diarize", False, BoolValidator())
+    deepgram_paragraphs = ConfigItem("Deepgram", "Paragraphs", False, BoolValidator())
+    deepgram_utterances = ConfigItem("Deepgram", "Utterances", False, BoolValidator())
+    deepgram_filler_words = ConfigItem("Deepgram", "FillerWords", False, BoolValidator())
+    deepgram_numerals = ConfigItem("Deepgram", "Numerals", False, BoolValidator())
+
     # ------------------- 配音配置 -------------------
     dubbing_provider = ConfigItem("Dubbing", "Provider", "edge")
     dubbing_preset = ConfigItem("Dubbing", "Preset", "edge-cn-xiaoxiao")

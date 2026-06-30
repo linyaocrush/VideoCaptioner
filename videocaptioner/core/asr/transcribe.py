@@ -1,6 +1,7 @@
 from videocaptioner.core.asr.asr_data import ASRData
 from videocaptioner.core.asr.bcut import BcutASR
 from videocaptioner.core.asr.chunked_asr import ChunkedASR
+from videocaptioner.core.asr.deepgram_asr import DeepgramASR
 from videocaptioner.core.asr.faster_whisper import FasterWhisperASR
 from videocaptioner.core.asr.fun_asr import BailianFunASR
 from videocaptioner.core.asr.jianying import JianYingASR
@@ -72,6 +73,9 @@ def _create_asr_instance(audio_path: str, config: TranscribeConfig) -> ChunkedAS
 
     elif model_type == TranscribeModelEnum.FUN_ASR:
         return _create_fun_asr(audio_path, config)
+
+    elif model_type == TranscribeModelEnum.DEEPGRAM:
+        return _create_deepgram_asr(audio_path, config)
 
     else:
         raise ValueError(f"Invalid transcription model: {model_type}")
@@ -174,6 +178,29 @@ def _create_fun_asr(audio_path: str, config: TranscribeConfig) -> ChunkedASR:
     }
     return ChunkedASR(
         asr_class=BailianFunASR,
+        audio_path=audio_path,
+        asr_kwargs=asr_kwargs,
+    )
+
+
+def _create_deepgram_asr(audio_path: str, config: TranscribeConfig) -> ChunkedASR:
+    """Create Deepgram ASR instance with chunking support."""
+    asr_kwargs = {
+        "use_cache": True,
+        "need_word_time_stamp": config.need_word_time_stamp,
+        "api_key": config.deepgram_api_key or "",
+        "model": config.deepgram_model or "nova-2",
+        "language": config.transcribe_language,
+        "punctuate": config.deepgram_punctuate,
+        "smart_format": config.deepgram_smart_format,
+        "diarize": config.deepgram_diarize,
+        "paragraphs": config.deepgram_paragraphs,
+        "utterances": config.deepgram_utterances,
+        "filler_words": config.deepgram_filler_words,
+        "numerals": config.deepgram_numerals,
+    }
+    return ChunkedASR(
+        asr_class=DeepgramASR,
         audio_path=audio_path,
         asr_kwargs=asr_kwargs,
     )

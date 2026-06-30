@@ -122,6 +122,7 @@ class TranscribeModelEnum(Enum):
     FASTER_WHISPER = "FasterWhisper ✨"
     WHISPER_CPP = "WhisperCpp"
     FUN_ASR = "阿里云百炼 FunASR"
+    DEEPGRAM = "Deepgram"
 
 
 class TranslatorServiceEnum(Enum):
@@ -518,6 +519,10 @@ ASR_LANGUAGE_CAPABILITIES: dict[TranscribeModelEnum, ASRLanguageCapability] = {
         supported_languages=_get_all_languages_except_auto(),
         supports_auto=True,
     ),
+    TranscribeModelEnum.DEEPGRAM: ASRLanguageCapability(
+        supported_languages=_get_all_languages_except_auto(),
+        supports_auto=True,
+    ),
 }
 
 
@@ -590,6 +595,16 @@ class TranscribeConfig:
     fun_asr_api_key: Optional[str] = None
     fun_asr_api_base: Optional[str] = None
     fun_asr_model: Optional[str] = None
+    # Deepgram 配置
+    deepgram_api_key: Optional[str] = None
+    deepgram_model: str = "nova-2"
+    deepgram_punctuate: bool = True
+    deepgram_smart_format: bool = True
+    deepgram_diarize: bool = False
+    deepgram_paragraphs: bool = False
+    deepgram_utterances: bool = False
+    deepgram_filler_words: bool = False
+    deepgram_numerals: bool = False
 
     def _mask_key(self, key: Optional[str]) -> str:
         """Mask sensitive key for display"""

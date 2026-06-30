@@ -82,6 +82,7 @@ def run(args: Namespace, config: dict) -> int:
         "bijian": TranscribeModelEnum.BIJIAN,
         "jianying": TranscribeModelEnum.JIANYING,
         "whisper-cpp": TranscribeModelEnum.WHISPER_CPP,
+        "deepgram": TranscribeModelEnum.DEEPGRAM,
     }
 
     # Map CLI string values to enums

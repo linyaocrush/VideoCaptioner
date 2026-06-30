@@ -67,6 +67,10 @@ DEFAULTS: Dict[str, Any] = {
         "api_base": "https://api.openai.com/v1",
         "model": "gpt-4o-mini",
     },
+    "deepgram": {
+        "api_key": "",
+        "model": "nova-2",
+    },
     "whisper_api": {
         "api_key": "",
         "api_base": "https://api.openai.com/v1",

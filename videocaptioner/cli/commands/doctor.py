@@ -129,6 +129,8 @@ def _check_transcribe(config: dict) -> list[Check]:
         checks.append(Check("whisper_api.api_key", "error", "Whisper API key is missing", "Run 'videocaptioner config set whisper_api.api_key <key>'"))
     if asr == "fun-asr" and not get(config, "fun_asr.api_key", ""):
         checks.append(Check("fun_asr.api_key", "error", "百炼 Fun-ASR API Key 未配置"))
+    if asr == "deepgram" and not get(config, "deepgram.api_key", ""):
+        checks.append(Check("deepgram.api_key", "error", "Deepgram API Key 未配置。请设置 DEEPGRAM_API_KEY 环境变量或运行 'videocaptioner config set deepgram.api_key <key>'"))
     if asr == "whisper-cpp" and not any(shutil.which(n) for n in ["whisper-cpp", "whisper", "whisper-cpp-main"]):
         checks.append(Check("whisper-cpp", "error", "whisper.cpp binary not found", "Install whisper.cpp or choose --asr bijian/whisper-api"))
     return checks
