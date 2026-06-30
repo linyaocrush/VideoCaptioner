@@ -36,11 +36,13 @@ def bundled_voice_preview(preset_name: str) -> Path | None:
     return None
 
 
-def playable_voice_preview(path: Path) -> Path:
+def playable_voice_preview(path: Path, cache_key: str = "") -> Path:
     """规范化预览音频为可播放格式"""
     if path.suffix == ".wav":
         return path
-    target = CACHE_PATH / "voice-previews" / f"{path.stem}.wav"
+    # Use a unique cache key per voice so switching voices plays the correct file.
+    stem = cache_key or path.stem
+    target = CACHE_PATH / "voice-previews" / f"{stem}.wav"
     target.parent.mkdir(parents=True, exist_ok=True)
     if target.exists():
         return target
@@ -118,7 +120,7 @@ class VoicePreviewThread(QThread):
             )
 
             result = synthesizer.synthesize(request)
-            playable = playable_voice_preview(Path(result.output_path))
+            playable = playable_voice_preview(Path(result.output_path), cache_key=self.preset_name)
             self.finished.emit(str(playable))
 
         except Exception as e:

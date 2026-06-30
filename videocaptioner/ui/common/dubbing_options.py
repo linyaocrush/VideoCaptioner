@@ -72,11 +72,15 @@ def get_provider_voices(provider: str) -> tuple[DubbingVoiceOption, ...]:
     from videocaptioner.core.dubbing.presets import PRESETS, EDGE_VOICE_ALIASES, SILICONFLOW_VOICE_ALIASES, GEMINI_VOICES
 
     if provider == "edge":
+        # Female voice aliases (matched against the alias key, not the full voice ID)
+        _edge_female_aliases = {
+            "xiaoxiao", "xiaoyi", "xiaochen", "xiaohan", "xiaomeng",
+            "xiaomo", "xiaoqiu", "xiaorui", "xiaoshuang",
+            "xiaoyan", "xiaozhen", "jenny", "aria", "sara",
+        }
         voices = []
         for alias, full_id in EDGE_VOICE_ALIASES.items():
-            gender = "女声" if full_id.split("-")[2] in {"Xiaoxiao", "Xiaoyi", "Xiaohan", "Xiaomeng",
-                           "Xiaomo", "Xiaoqiu", "Xiaorui", "Xiaoshuang",
-                           "Xiaoyan", "Xiaozhen", "Jenny", "Aria", "Sara"} else "男声"
+            gender = "女声" if alias in _edge_female_aliases else "男声"
             lang = "中文" if "CN" in full_id else "英语" if "US" in full_id else "其他"
             lang_prefix = "cn" if "CN" in full_id else "en" if "US" in full_id else "xx"
             voices.append(DubbingVoiceOption(
