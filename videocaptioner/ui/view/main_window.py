@@ -22,6 +22,7 @@ from videocaptioner.ui.common.config import cfg
 from videocaptioner.ui.components.DonateDialog import DonateDialog
 from videocaptioner.ui.thread.version_checker_thread import VersionChecker
 from videocaptioner.ui.view.batch_process_interface import BatchProcessInterface
+from videocaptioner.ui.view.dubbing_interface import DubbingInterface
 from videocaptioner.ui.view.home_interface import HomeInterface
 from videocaptioner.ui.view.llm_logs_interface import LLMLogsInterface
 from videocaptioner.ui.view.setting_interface import SettingInterface
@@ -37,6 +38,7 @@ class MainWindow(FluentWindow):
 
         # 创建子界面
         self.homeInterface = HomeInterface(self)
+        self.dubbingInterface = DubbingInterface(self)
         self.settingInterface = SettingInterface(self)
         self.subtitleStyleInterface = SubtitleStyleInterface(self)
         self.batchProcessInterface = BatchProcessInterface(self)
@@ -66,6 +68,7 @@ class MainWindow(FluentWindow):
         """初始化导航栏"""
         # 添加导航项
         self.addSubInterface(self.homeInterface, FIF.HOME, self.tr("主页"))
+        self.addSubInterface(self.dubbingInterface, FIF.VOLUME, self.tr("配音"))
         self.addSubInterface(self.batchProcessInterface, FIF.VIDEO, self.tr("批量处理"))
         self.addSubInterface(self.subtitleStyleInterface, FIF.FONT, self.tr("字幕样式"))
         self.addSubInterface(self.llmLogsInterface, FIF.HISTORY, self.tr("请求日志"))

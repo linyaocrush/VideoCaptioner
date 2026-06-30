@@ -1,5 +1,7 @@
 """Dubbing provider/model/voice presets."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 SILICONFLOW_COSYVOICE2_MODEL = "FunAudioLLM/CosyVoice2-0.5B"
@@ -7,36 +9,21 @@ SILICONFLOW_COSYVOICE2_MODEL = "FunAudioLLM/CosyVoice2-0.5B"
 SILICONFLOW_VOICE_ALIASES = {
     "anna": f"{SILICONFLOW_COSYVOICE2_MODEL}:anna",
     "alex": f"{SILICONFLOW_COSYVOICE2_MODEL}:alex",
+    "bella": f"{SILICONFLOW_COSYVOICE2_MODEL}:bella",
     "benjamin": f"{SILICONFLOW_COSYVOICE2_MODEL}:benjamin",
+    "charles": f"{SILICONFLOW_COSYVOICE2_MODEL}:charles",
+    "claire": f"{SILICONFLOW_COSYVOICE2_MODEL}:claire",
+    "david": f"{SILICONFLOW_COSYVOICE2_MODEL}:david",
+    "diana": f"{SILICONFLOW_COSYVOICE2_MODEL}:diana",
 }
 
 GEMINI_VOICES = {
-    "Achird",
-    "Aoede",
-    "Autonoe",
-    "Callirrhoe",
-    "Charon",
-    "Despina",
-    "Enceladus",
-    "Erinome",
-    "Fenrir",
-    "Gacrux",
-    "Iapetus",
-    "Kore",
-    "Laomedeia",
-    "Leda",
-    "Orus",
-    "Puck",
-    "Pulcherrima",
-    "Rasalgethi",
-    "Sadachbia",
-    "Sadaltager",
-    "Schedar",
-    "Sulafat",
-    "Umbriel",
-    "Vindemiatrix",
-    "Zephyr",
-    "Zubenelgenubi",
+    "Achernar", "Achird", "Aoede", "Autonoe", "Callirrhoe",
+    "Charon", "Despina", "Enceladus", "Erinome", "Fenrir",
+    "Gacrux", "Iapetus", "Kore", "Laomedeia", "Leda",
+    "Orus", "Puck", "Pulcherrima", "Rasalgethi", "Sadachbia",
+    "Sadaltager", "Schedar", "Sulafat", "Umbriel",
+    "Vindemiatrix", "Zephyr", "Zubenelgenubi",
 }
 
 EDGE_VOICE_ALIASES = {
@@ -45,9 +32,24 @@ EDGE_VOICE_ALIASES = {
     "yunjian": "zh-CN-YunjianNeural",
     "yunxi": "zh-CN-YunxiNeural",
     "yunyang": "zh-CN-YunyangNeural",
+    "xiaochen": "zh-CN-XiaochenNeural",
+    "xiaohan": "zh-CN-XiaohanNeural",
+    "xiaomeng": "zh-CN-XiaomengNeural",
+    "xiaomo": "zh-CN-XiaomoNeural",
+    "xiaoqiu": "zh-CN-XiaoqiuNeural",
+    "xiaorui": "zh-CN-XiaoruiNeural",
+    "xiaoshuang": "zh-CN-XiaoshuangNeural",
+    "xiaoyan": "zh-CN-XiaoyanNeural",
+    "xiaozhen": "zh-CN-XiaozhenNeural",
+    "yunfeng": "zh-CN-YunfengNeural",
+    "yunhao": "zh-CN-YunhaoNeural",
+    "yunxia": "zh-CN-YunxiaNeural",
+    "yunya": "zh-CN-YunyaNeural",
     "jenny": "en-US-JennyNeural",
     "guy": "en-US-GuyNeural",
     "aria": "en-US-AriaNeural",
+    "tony": "en-US-TonyNeural",
+    "sara": "en-US-SaraNeural",
 }
 
 
@@ -61,84 +63,90 @@ class DubbingPreset:
     style_prompt: str = ""
 
 
-PRESETS: dict[str, DubbingPreset] = {
-    "siliconflow-cn-female": DubbingPreset(
-        name="siliconflow-cn-female",
-        provider="siliconflow",
-        api_base="https://api.siliconflow.cn/v1",
-        model=SILICONFLOW_COSYVOICE2_MODEL,
-        voice=SILICONFLOW_VOICE_ALIASES["anna"],
-        style_prompt="请用自然、清晰、适合视频配音的中文语气朗读。",
-    ),
-    "siliconflow-cn-male": DubbingPreset(
-        name="siliconflow-cn-male",
-        provider="siliconflow",
-        api_base="https://api.siliconflow.cn/v1",
-        model=SILICONFLOW_COSYVOICE2_MODEL,
-        voice=SILICONFLOW_VOICE_ALIASES["alex"],
-        style_prompt="请用自然、清晰、适合视频配音的中文语气朗读。",
-    ),
-    "siliconflow-cn-deep-male": DubbingPreset(
-        name="siliconflow-cn-deep-male",
-        provider="siliconflow",
-        api_base="https://api.siliconflow.cn/v1",
-        model=SILICONFLOW_COSYVOICE2_MODEL,
-        voice=SILICONFLOW_VOICE_ALIASES["benjamin"],
-        style_prompt="请用沉稳、清晰、适合视频配音的中文语气朗读。",
-    ),
-    "gemini-en-neutral": DubbingPreset(
-        name="gemini-en-neutral",
-        provider="gemini",
-        api_base="https://generativelanguage.googleapis.com/v1beta",
-        model="gemini-3.1-flash-tts-preview",
-        voice="Kore",
-        style_prompt="Read naturally and clearly for a video dubbing track.",
-    ),
-    "gemini-en-friendly": DubbingPreset(
-        name="gemini-en-friendly",
-        provider="gemini",
-        api_base="https://generativelanguage.googleapis.com/v1beta",
-        model="gemini-3.1-flash-tts-preview",
-        voice="Achird",
-        style_prompt="Read in a friendly, natural, conversational voice for a video dubbing track.",
-    ),
-    "gemini-en-upbeat": DubbingPreset(
-        name="gemini-en-upbeat",
-        provider="gemini",
-        api_base="https://generativelanguage.googleapis.com/v1beta",
-        model="gemini-3.1-flash-tts-preview",
-        voice="Puck",
-        style_prompt="Read in an upbeat, clear, energetic voice for a video dubbing track.",
-    ),
-    "edge-cn-female": DubbingPreset(
-        name="edge-cn-female",
-        provider="edge",
-        api_base="",
-        model="edge-tts",
-        voice=EDGE_VOICE_ALIASES["xiaoxiao"],
-    ),
-    "edge-cn-male": DubbingPreset(
-        name="edge-cn-male",
-        provider="edge",
-        api_base="",
-        model="edge-tts",
-        voice=EDGE_VOICE_ALIASES["yunxi"],
-    ),
-    "edge-en-female": DubbingPreset(
-        name="edge-en-female",
-        provider="edge",
-        api_base="",
-        model="edge-tts",
-        voice=EDGE_VOICE_ALIASES["jenny"],
-    ),
-    "edge-en-male": DubbingPreset(
-        name="edge-en-male",
-        provider="edge",
-        api_base="",
-        model="edge-tts",
-        voice=EDGE_VOICE_ALIASES["guy"],
-    ),
-}
+def _build_siliconflow_presets() -> dict[str, DubbingPreset]:
+    base = "https://api.siliconflow.cn/v1"
+    prompts = {
+        "anna": "请用自然、清晰、适合视频配音的中文语气朗读。",
+        "alex": "请用自然、清晰、适合视频配音的中文语气朗读。",
+        "bella": "请用温柔、亲切、适合视频配音的中文语气朗读。",
+        "benjamin": "请用沉稳、清晰、适合视频配音的中文语气朗读。",
+        "charles": "请用沉稳、清晰、适合视频配音的中文语气朗读。",
+        "claire": "请用温暖、自然、适合视频配音的中文语气朗读。",
+        "david": "请用稳重、清晰、适合视频配音的中文语气朗读。",
+        "diana": "请用优雅、自然、适合视频配音的中文语气朗读。",
+    }
+    presets = {}
+    for alias, prompt in prompts.items():
+        presets[f"siliconflow-cn-{alias}"] = DubbingPreset(
+            name=f"siliconflow-cn-{alias}",
+            provider="siliconflow",
+            api_base=base,
+            model=SILICONFLOW_COSYVOICE2_MODEL,
+            voice=SILICONFLOW_VOICE_ALIASES[alias],
+            style_prompt=prompt,
+        )
+    return presets
+
+
+def _build_gemini_presets() -> dict[str, DubbingPreset]:
+    base = "https://generativelanguage.googleapis.com/v1beta"
+    model = "gemini-3.1-flash-tts-preview"
+    style_map = {
+        "neutral": "Read naturally and clearly for a video dubbing track.",
+        "friendly": "Read in a friendly, natural, conversational voice for a video dubbing track.",
+        "upbeat": "Read in an upbeat, clear, energetic voice for a video dubbing track.",
+    }
+    voice_by_style = {
+        "neutral": ["Kore", "Enceladus", "Schedar", "Umbriel"],
+        "friendly": ["Achird", "Charon", "Puck", "Laomedeia"],
+        "upbeat": ["Puck", "Zephyr", "Aoede", "Fenrir"],
+    }
+    presets = {}
+    for style, voices in voice_by_style.items():
+        for voice in voices[:2]:
+            name = f"gemini-en-{style}-{voice.lower()}"
+            presets[name] = DubbingPreset(
+                name=name, provider="gemini", api_base=base,
+                model=model, voice=voice, style_prompt=style_map[style],
+            )
+    return presets
+
+
+def _build_edge_presets() -> dict[str, DubbingPreset]:
+    cn_female = ["xiaoxiao", "xiaoyi", "xiaochen", "xiaohan", "xiaomeng", "xiaomo",
+                 "xiaoqiu", "xiaorui", "xiaoshuang", "xiaoyan", "xiaozhen"]
+    cn_male = ["yunjian", "yunxi", "yunyang", "yunfeng", "yunhao", "yunxia", "yunya"]
+    en_female = ["jenny", "aria", "sara"]
+    en_male = ["guy", "tony"]
+
+    presets = {}
+    for alias in cn_female:
+        presets[f"edge-cn-{alias}"] = DubbingPreset(
+            name=f"edge-cn-{alias}", provider="edge",
+            api_base="", model="edge-tts", voice=EDGE_VOICE_ALIASES[alias],
+        )
+    for alias in cn_male:
+        presets[f"edge-cn-{alias}"] = DubbingPreset(
+            name=f"edge-cn-{alias}", provider="edge",
+            api_base="", model="edge-tts", voice=EDGE_VOICE_ALIASES[alias],
+        )
+    for alias in en_female:
+        presets[f"edge-en-{alias}"] = DubbingPreset(
+            name=f"edge-en-{alias}", provider="edge",
+            api_base="", model="edge-tts", voice=EDGE_VOICE_ALIASES[alias],
+        )
+    for alias in en_male:
+        presets[f"edge-en-{alias}"] = DubbingPreset(
+            name=f"edge-en-{alias}", provider="edge",
+            api_base="", model="edge-tts", voice=EDGE_VOICE_ALIASES[alias],
+        )
+    return presets
+
+
+PRESETS: dict[str, DubbingPreset] = {}
+PRESETS.update(_build_siliconflow_presets())
+PRESETS.update(_build_gemini_presets())
+PRESETS.update(_build_edge_presets())
 
 
 def get_dubbing_preset(name: str) -> DubbingPreset:

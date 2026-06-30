@@ -157,6 +157,13 @@ class SettingInterface(ScrollArea):
             cfg.need_video,
             self.subtitleGroup,
         )
+        self.dubbingEnabledCard = SwitchSettingCard(
+            FIF.VOLUME,
+            self.tr("配音"),
+            self.tr("启用配音功能（使用配音页面当前设置）"),
+            cfg.dubbing_enabled,
+            self.subtitleGroup,
+        )
         self.softSubtitleCard = SwitchSettingCard(
             FIF.FONT,
             self.tr("软字幕"),
@@ -280,6 +287,7 @@ class SettingInterface(ScrollArea):
         self.subtitleGroup.addSettingCard(self.subtitleStyleCard)
         self.subtitleGroup.addSettingCard(self.subtitleLayoutCard)
         self.subtitleGroup.addSettingCard(self.needVideoCard)
+        self.subtitleGroup.addSettingCard(self.dubbingEnabledCard)
         self.subtitleGroup.addSettingCard(self.softSubtitleCard)
         self.subtitleGroup.addSettingCard(self.videoQualityCard)
 
@@ -799,6 +807,8 @@ class SettingInterface(ScrollArea):
 
         # 关于
         self.aboutCard.clicked.connect(self.checkUpdate)
+
+        self.dubbingEnabledCard.checkedChanged.connect(signalBus.dubbing_enabled_changed)
 
         # 全局 signalBus
         self.transcribeModelCard.comboBox.currentTextChanged.connect(

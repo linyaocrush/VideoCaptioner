@@ -228,6 +228,32 @@ class Config(QConfig):
     fun_asr_api_base = ConfigItem("FunASR", "ApiBase", "https://dashscope.aliyuncs.com")
     fun_asr_model = ConfigItem("FunASR", "Model", "fun-asr")
 
+    # ------------------- 配音配置 -------------------
+    dubbing_provider = ConfigItem("Dubbing", "Provider", "edge")
+    dubbing_preset = ConfigItem("Dubbing", "Preset", "edge-cn-xiaoxiao")
+    dubbing_api_key = ConfigItem("Dubbing", "ApiKey", "")
+    dubbing_api_base = ConfigItem("Dubbing", "ApiBase", "")
+    dubbing_model = ConfigItem("Dubbing", "Model", "edge-tts")
+    dubbing_voice = ConfigItem("Dubbing", "Voice", "zh-CN-XiaoxiaoNeural")
+    dubbing_style_prompt = ConfigItem("Dubbing", "StylePrompt", "")
+    dubbing_tts_workers = RangeConfigItem("Dubbing", "TTSWorkers", 5, RangeValidator(1, 20))
+    dubbing_use_cache = ConfigItem("Dubbing", "UseCache", True, BoolValidator())
+    dubbing_clone_audio = ConfigItem("Dubbing", "CloneAudio", "")
+    dubbing_clone_text = ConfigItem("Dubbing", "CloneText", "")
+    dubbing_enabled = ConfigItem("Dubbing", "Enabled", False, BoolValidator())
+    dubbing_timing = OptionsConfigItem(
+        "Dubbing", "Timing", "balanced",
+        OptionsValidator(["balanced", "natural", "strict", "none"]),
+    )
+    dubbing_audio_mode = OptionsConfigItem(
+        "Dubbing", "AudioMode", "replace",
+        OptionsValidator(["replace", "mix", "duck"]),
+    )
+    dubbing_text_track = OptionsConfigItem(
+        "Dubbing", "TextTrack", "auto",
+        OptionsValidator(["auto", "first", "second"]),
+    )
+
     # ------------------- 字幕配置 -------------------
     need_optimize = ConfigItem("Subtitle", "NeedOptimize", False, BoolValidator())
     need_translate = ConfigItem("Subtitle", "NeedTranslate", False, BoolValidator())

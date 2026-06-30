@@ -416,6 +416,8 @@ class BatchProcessInterface(QWidget):
             if status == str(BatchTaskStatus.WAITING):
                 task_type = BatchTaskType(self.task_type_combo.currentText())
                 batch_task = BatchTask(file_path, task_type)
+                if task_type == BatchTaskType.FULL_PROCESS:
+                    batch_task.dubbing_enabled = cfg.dubbing_enabled.value
                 self.batch_thread.add_task(batch_task)
 
     def start_task(self, file_path: str):
@@ -432,6 +434,8 @@ class BatchProcessInterface(QWidget):
         # 创建并添加单个任务
         task_type = BatchTaskType(self.task_type_combo.currentText())
         batch_task = BatchTask(file_path, task_type)
+        if task_type == BatchTaskType.FULL_PROCESS:
+            batch_task.dubbing_enabled = cfg.dubbing_enabled.value
         self.batch_thread.add_task(batch_task)
 
     def cancel_task(self, file_path: str):

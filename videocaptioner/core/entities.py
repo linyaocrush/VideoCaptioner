@@ -726,6 +726,21 @@ class SynthesisConfig:
     # 字幕样式配置
     ass_style: str = ""  # ASS 样式字符串
     rounded_style: Optional[dict] = None  # 圆角背景样式配置
+    # 配音配置
+    dubbing_provider: Optional[str] = None
+    dubbing_preset: Optional[str] = None
+    dubbing_api_key: Optional[str] = None
+    dubbing_api_base: Optional[str] = None
+    dubbing_model: Optional[str] = None
+    dubbing_voice: Optional[str] = None
+    dubbing_style_prompt: Optional[str] = None
+    dubbing_tts_workers: int = 5
+    dubbing_use_cache: bool = True
+    # 配音新设置
+    dubbing_enabled: bool = False
+    dubbing_timing: str = "balanced"
+    dubbing_audio_mode: str = "replace"
+    dubbing_text_track: str = "auto"
 
     def print_config(self) -> str:
         """Print video synthesis configuration"""

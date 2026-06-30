@@ -205,7 +205,16 @@ class VideoSynthesisInterface(QWidget):
         self.command_bar.addAction(self.need_video_action)
 
         self.command_bar.addSeparator()
-
+        # 添加配音开关
+        self.dubbing_action = Action(
+            FIF.VOLUME,
+            self.tr("配音"),
+            triggered=self.on_dubbing_action_triggered,
+            checkable=True,
+        )
+        self.dubbing_action.setToolTip(self.tr("启用配音功能（使用配音页面当前设置）"))
+        self.command_bar.addAction(self.dubbing_action)
+        self.command_bar.addSeparator()
         # 添加打开文件夹按钮
         folder_action = Action(FIF.FOLDER, "", triggered=self.open_video_folder)
         folder_action.setToolTip(self.tr("打开输出文件夹"))
@@ -270,6 +279,7 @@ class VideoSynthesisInterface(QWidget):
         signalBus.video_quality_changed.connect(self.on_video_quality_changed)
         signalBus.use_subtitle_style_changed.connect(self.on_use_style_changed)
         signalBus.subtitle_render_mode_changed.connect(self.on_render_mode_changed_external)
+        signalBus.dubbing_enabled_changed.connect(self.on_dubbing_enabled_changed)
 
     def set_value(self):
         """设置初始值"""
@@ -279,6 +289,7 @@ class VideoSynthesisInterface(QWidget):
 
         # 设置样式相关初始值
         self.use_style_action.setChecked(cfg.use_subtitle_style.value)
+        self.dubbing_action.setChecked(cfg.dubbing_enabled.value)
         self.render_mode_button.setText(cfg.subtitle_render_mode.value.value)
         self._update_synthesis_controls_state()
 
@@ -406,6 +417,31 @@ class VideoSynthesisInterface(QWidget):
     def on_render_mode_changed_external(self, mode_text: str):
         """处理外部渲染模式变更（仅更新 UI）"""
         self.render_mode_button.setText(mode_text)
+
+    def on_dubbing_action_triggered(self, checked: bool):
+        """处理配音开关点击"""
+        cfg.set(cfg.dubbing_enabled, checked)
+        signalBus.dubbing_enabled_changed.emit(checked)
+        if checked:
+            InfoBar.info(
+                self.tr("启用配音"),
+                self.tr("配音功能已启用，使用配音页面当前设置"),
+                duration=3000,
+                position=InfoBarPosition.BOTTOM,
+                parent=self,
+            )
+        else:
+            InfoBar.info(
+                self.tr("关闭配音"),
+                self.tr("配音功能已关闭"),
+                duration=3000,
+                position=InfoBarPosition.BOTTOM,
+                parent=self,
+            )
+
+    def on_dubbing_enabled_changed(self, checked: bool):
+        """处理外部配音配置变更（仅更新UI状态）"""
+        self.dubbing_action.setChecked(checked)
 
     def _update_synthesis_controls_state(self):
         """更新所有合成相关控件的启用/禁用状态"""

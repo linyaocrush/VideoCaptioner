@@ -11,7 +11,9 @@ from videocaptioner.core.entities import (
     TranscribeTask,
 )
 from videocaptioner.core.utils.logger import setup_logger
+from videocaptioner.ui.common.config import cfg
 from videocaptioner.ui.task_factory import TaskFactory
+from videocaptioner.ui.thread.dubbing_thread import DubbingThread
 from videocaptioner.ui.thread.subtitle_thread import SubtitleThread
 from videocaptioner.ui.thread.transcript_thread import TranscriptThread
 from videocaptioner.ui.thread.video_synthesis_thread import VideoSynthesisThread
@@ -27,6 +29,7 @@ class BatchTask:
         self.progress = 0
         self.error_message = ""
         self.current_thread: Optional[QThread] = None
+        self.dubbing_enabled: bool = False
 
 
 class BatchProcessThread(QThread):
@@ -286,7 +289,9 @@ class BatchProcessThread(QThread):
             self.threads.remove(batch_task.current_thread)
 
         # 字幕完成后创建视频合成任务
+        from videocaptioner.ui.common.config import cfg
         synthesis_task = self.factory.create_synthesis_task(video_path, subtitle_path)
+        synthesis_task.synthesis_config.dubbing_enabled = cfg.dubbing_enabled.value
         thread = VideoSynthesisThread(synthesis_task)
         batch_task.current_thread = thread
 
@@ -297,9 +302,68 @@ class BatchProcessThread(QThread):
             partial(self.on_full_process_synthesis_progress, batch_task)
         )
         thread.error.connect(partial(self._on_error_wrapper, batch_task))
-        thread.finished.connect(partial(self._on_finished_wrapper, batch_task))
+        # 合成完成后检查是否需要配音
+        thread.finished.connect(
+            partial(self._on_synthesis_finished_with_dubbing, batch_task, synthesis_task)
+        )
 
         thread.start()
+
+    def _on_synthesis_finished_with_dubbing(self, batch_task, synthesis_task):
+        """合成完成后检查是否需要进行配音"""
+        if batch_task.current_thread in self.threads:
+            self.threads.remove(batch_task.current_thread)
+
+        # 检查是否需要配音
+        if not getattr(synthesis_task.synthesis_config, 'dubbing_enabled', False):
+            self._on_finished_wrapper(batch_task)
+            return
+
+        # 需要配音：使用配音页面当前设置
+        from videocaptioner.core.entities import SynthesisConfig, SynthesisTask
+        from videocaptioner.ui.common.config import cfg
+        from pathlib import Path
+
+        dubbing_config = SynthesisConfig(
+            dubbing_enabled=True,
+            dubbing_provider=cfg.dubbing_provider.value,
+            dubbing_preset=cfg.dubbing_preset.value,
+            dubbing_api_key=cfg.dubbing_api_key.value,
+            dubbing_api_base=cfg.dubbing_api_base.value,
+            dubbing_model=cfg.dubbing_model.value,
+            dubbing_voice=cfg.dubbing_voice.value,
+            dubbing_style_prompt=cfg.dubbing_style_prompt.value,
+            dubbing_tts_workers=cfg.dubbing_tts_workers.value,
+            dubbing_use_cache=cfg.dubbing_use_cache.value,
+            dubbing_timing=cfg.dubbing_timing.value,
+            dubbing_audio_mode=cfg.dubbing_audio_mode.value,
+        )
+        dubbing_task = SynthesisTask(
+            video_path=synthesis_task.output_path,
+            subtitle_path=synthesis_task.subtitle_path,
+            output_path=str(
+                Path(synthesis_task.output_path).with_name(
+                    f"{Path(synthesis_task.output_path).stem}_dubbed.mp4"
+                )
+            ),
+            synthesis_config=dubbing_config,
+        )
+        thread = DubbingThread(dubbing_task)
+        batch_task.current_thread = thread
+        self.threads.append(thread)
+
+        thread.progress.connect(
+            partial(self.on_full_process_dubbing_progress, batch_task)
+        )
+        thread.error.connect(partial(self._on_error_wrapper, batch_task))
+        thread.finished.connect(partial(self._on_finished_wrapper, batch_task))
+        thread.start()
+
+    def on_full_process_dubbing_progress(self, batch_task, progress, message):
+        """处理全流程任务中配音部分的进度"""
+        if batch_task.status == BatchTaskStatus.RUNNING:
+            progress_value = 90 + progress // 10
+            self.task_progress.emit(batch_task.file_path, progress_value, message)
 
     def on_full_process_synthesis_progress(
         self, batch_task: BatchTask, progress: int, message: str

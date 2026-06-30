@@ -23,6 +23,9 @@ class SignalBus(QObject):
     # 渲染模式变更信号
     subtitle_render_mode_changed = pyqtSignal(str)
 
+    # 配音开关信号
+    dubbing_enabled_changed = pyqtSignal(bool)
+
     # 新增视频控制相关信号
     video_play = pyqtSignal()  # 播放信号
     video_pause = pyqtSignal()  # 暂停信号

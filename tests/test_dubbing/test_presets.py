@@ -11,13 +11,13 @@ from videocaptioner.core.dubbing.presets import (
 def test_available_presets_include_main_providers():
     presets = available_dubbing_presets()
 
-    assert "siliconflow-cn-female" in presets
-    assert "gemini-en-friendly" in presets
-    assert "edge-cn-female" in presets
+    assert "siliconflow-cn-anna" in presets
+    assert "gemini-en-neutral-kore" in presets
+    assert "edge-cn-xiaoxiao" in presets
 
 
 def test_get_dubbing_preset():
-    preset = get_dubbing_preset("siliconflow-cn-female")
+    preset = get_dubbing_preset("siliconflow-cn-anna")
 
     assert preset.provider == "siliconflow"
     assert preset.model == "FunAudioLLM/CosyVoice2-0.5B"
