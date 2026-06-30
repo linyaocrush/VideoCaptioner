@@ -489,6 +489,37 @@ def _build_doctor_parser(subparsers) -> None:
     p.set_defaults(func=_run_doctor)
 
 
+def _build_models_parser(subparsers) -> None:
+    p = subparsers.add_parser(
+        "models",
+        help="Manage local ASR models (list / download)",
+        description="List or download local speech recognition models for whisper-cpp and faster-whisper.",
+    )
+    _add_common_options(p)
+    subs = p.add_subparsers(dest="models_action", required=True)
+
+    list_p = subs.add_parser("list", help="List available models")
+    list_p.add_argument("kind", nargs="?", default=None,
+                        choices=["whisper-cpp", "faster-whisper"],
+                        help="Filter by model kind")
+    list_p.add_argument("--models-dir", help="Custom models directory")
+    list_p.set_defaults(func=_run_models)
+
+    dl_p = subs.add_parser("download", help="Download a model")
+    dl_p.add_argument("kind", choices=["whisper-cpp", "faster-whisper"],
+                      help="Model kind")
+    dl_p.add_argument("name", help="Model name (e.g. tiny, base, small)")
+    dl_p.add_argument("--models-dir", help="Custom models directory")
+    dl_p.add_argument("--quiet", action="store_true", help="Suppress progress output")
+    dl_p.set_defaults(func=_run_models)
+
+
+def _run_models(args: argparse.Namespace) -> int:
+    from videocaptioner.cli.commands.models_cmd import run
+
+    return run(args, {})
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="videocaptioner",
@@ -509,6 +540,7 @@ def build_parser() -> argparse.ArgumentParser:
     _build_download_parser(subparsers)
     _build_config_parser(subparsers)
     _build_doctor_parser(subparsers)
+    _build_models_parser(subparsers)
     _build_style_parser(subparsers)
 
     return parser
