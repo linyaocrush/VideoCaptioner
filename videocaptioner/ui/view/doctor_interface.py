@@ -7,8 +7,10 @@ from typing import Optional
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import (
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -29,6 +31,7 @@ from videocaptioner.core.constant import (
     INFOBAR_DURATION_SUCCESS,
 )
 from videocaptioner.ui.common.config import cfg
+from videocaptioner.ui.common.dubbing_options import get_provider_option
 
 
 class DoctorThread(QThread):
@@ -46,6 +49,75 @@ class DoctorThread(QThread):
             self.error.emit(str(exc))
 
 
+class TaskChip(QFrame):
+    """任务标签组件"""
+
+    def __init__(self, category: str, title: str, parent=None):
+        super().__init__(parent)
+        self.setObjectName("taskChip")
+        self.setFixedHeight(62)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 8, 14, 8)
+        layout.setSpacing(3)
+
+        cat_label = QLabel(category, self)
+        cat_label.setStyleSheet("font-size: 11px; color: #999999;")
+        title_label = QLabel(title, self)
+        title_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #CCCCCC;")
+        title_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+
+        layout.addWidget(cat_label)
+        layout.addWidget(title_label)
+
+
+class _CheckRow(QFrame):
+    """单条诊断结果行"""
+
+    def __init__(self, check: Check, parent=None):
+        super().__init__(parent)
+        self.setObjectName("checkRow")
+        self.setStyleSheet("background: transparent;")
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setSpacing(12)
+
+        # 状态图标
+        status_icon = QLabel(self)
+        if check.status == "ok":
+            status_icon.setText("✓")
+            status_icon.setStyleSheet("color: #38A169; font-size: 16px; font-weight: bold;")
+        elif check.status == "warn":
+            status_icon.setText("!")
+            status_icon.setStyleSheet("color: #EAA300; font-size: 16px; font-weight: bold;")
+        else:
+            status_icon.setText("✗")
+            status_icon.setStyleSheet("color: #E53E3E; font-size: 16px; font-weight: bold;")
+        status_icon.setFixedWidth(24)
+        layout.addWidget(status_icon)
+
+        # 名称和消息
+        text_layout = QVBoxLayout()
+        text_layout.setSpacing(2)
+
+        name_label = QLabel(check.name, self)
+        name_label.setStyleSheet("font-size: 13px; font-weight: bold; color: #CCCCCC;")
+        text_layout.addWidget(name_label)
+
+        msg_label = QLabel(check.message, self)
+        msg_label.setStyleSheet("font-size: 12px; color: #999999;")
+        msg_label.setWordWrap(True)
+        text_layout.addWidget(msg_label)
+
+        if check.fix:
+            fix_label = QLabel(self.tr("建议: ") + check.fix, self)
+            fix_label.setStyleSheet("font-size: 11px; color: #EAA300; font-style: italic;")
+            fix_label.setWordWrap(True)
+            text_layout.addWidget(fix_label)
+
+        layout.addLayout(text_layout, 1)
+
+
 class DoctorInterface(ScrollArea):
     """系统诊断界面"""
 
@@ -55,6 +127,8 @@ class DoctorInterface(ScrollArea):
         self._doctor_thread: Optional[DoctorThread] = None
         self.scrollWidget = QWidget()
         self.pageLayout = QVBoxLayout(self.scrollWidget)
+        self.taskGrid = QGridLayout()
+        self.taskStrip = QFrame(self.scrollWidget)
 
         self._init_ui()
 
@@ -76,6 +150,11 @@ class DoctorInterface(ScrollArea):
                 border: none;
                 background-color: transparent;
             }
+            QFrame#taskChip {
+                background: rgba(255,255,255,0.05);
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 12px;
+            }
         """
         )
 
@@ -96,9 +175,22 @@ class DoctorInterface(ScrollArea):
 
         # 副标题
         self.subtitle_label = CaptionLabel(
-            self.tr("检查系统依赖和配置，确保所有功能正常运行"), self.scrollWidget
+            self.tr("检查当前任务会用到的服务和工具"), self.scrollWidget
         )
         self.pageLayout.addWidget(self.subtitle_label)
+
+        # 任务标签条
+        self.taskStrip.setObjectName("taskStrip")
+        self.taskStrip.setStyleSheet(
+            "QFrame#taskStrip { background: rgba(255,255,255,0.03);"
+            "border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 8px; }"
+        )
+        strip_layout = QVBoxLayout(self.taskStrip)
+        strip_layout.setContentsMargins(12, 12, 12, 12)
+        self.taskGrid.setHorizontalSpacing(10)
+        self.taskGrid.setVerticalSpacing(10)
+        strip_layout.addLayout(self.taskGrid)
+        self.pageLayout.addWidget(self.taskStrip)
 
         # 诊断结果卡片
         self.result_card = CardWidget(self.scrollWidget)
@@ -111,7 +203,9 @@ class DoctorInterface(ScrollArea):
             self.tr("点击「运行诊断」开始检查系统环境"), self.result_card
         )
         self.placeholder_label.setAlignment(Qt.AlignCenter)
-        self.placeholder_label.setStyleSheet("color: #888888; font-size: 14px; padding: 60px 0; background: transparent;")
+        self.placeholder_label.setStyleSheet(
+            "color: #888888; font-size: 14px; padding: 60px 0; background: transparent;"
+        )
         self.result_layout.addWidget(self.placeholder_label)
 
         self.pageLayout.addWidget(self.result_card)
@@ -122,6 +216,19 @@ class DoctorInterface(ScrollArea):
 
     def showEvent(self, event):
         super().showEvent(event)
+        # 每次显示时刷新任务标签（配置可能已改变）
+        if not self._doctor_thread or not self._doctor_thread.isRunning():
+            self._refresh_task_chips()
+
+    def _refresh_task_chips(self):
+        """刷新任务标签，显示当前配置"""
+        _clear_layout(self.taskGrid)
+        chips = _build_task_chips()
+        columns = max(1, min(4, len(chips)))
+        for index, chip_data in enumerate(chips):
+            widget = TaskChip(chip_data[0], chip_data[1], self.taskStrip)
+            widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            self.taskGrid.addWidget(widget, index // columns, index % columns)
 
     def _run(self):
         if self._doctor_thread and self._doctor_thread.isRunning():
@@ -134,7 +241,9 @@ class DoctorInterface(ScrollArea):
         # 显示"检查中"提示
         label = BodyLabel(self.tr("正在检查，请稍候..."), self.result_card)
         label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("color: #888888; font-size: 14px; padding: 60px 0; background: transparent;")
+        label.setStyleSheet(
+            "color: #888888; font-size: 14px; padding: 60px 0; background: transparent;"
+        )
         self.placeholder_label.hide()
         self.checking_label = label
         self.result_layout.addWidget(label)
@@ -199,7 +308,9 @@ class DoctorInterface(ScrollArea):
         else:
             InfoBar.success(
                 self.tr("诊断完成"),
-                self.tr("当前检查项全部通过") if not warnings else self.tr("诊断完成，有 {count} 项警告").format(count=warnings),
+                self.tr("当前检查项全部通过")
+                if not warnings
+                else self.tr("诊断完成，有 {count} 项警告").format(count=warnings),
                 duration=INFOBAR_DURATION_SUCCESS,
                 parent=self,
             )
@@ -224,52 +335,45 @@ class DoctorInterface(ScrollArea):
         )
 
 
-class _CheckRow(QFrame):
-    """单条诊断结果行"""
+def _clear_layout(layout):
+    """清空布局中的所有组件"""
+    while layout.count():
+        item = layout.takeAt(0)
+        w = item.widget()
+        if w:
+            w.hide()
+            w.setParent(None)
+            w.deleteLater()
 
-    def __init__(self, check: Check, parent=None):
-        super().__init__(parent)
-        self.setObjectName("checkRow")
-        self.setStyleSheet("background: transparent;")
 
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(8, 6, 8, 6)
-        layout.setSpacing(12)
+def _build_task_chips() -> list[tuple[str, str]]:
+    """构建任务标签列表，显示当前配置"""
+    chips: list[tuple[str, str]] = []
 
-        # 状态图标
-        status_icon = QLabel(self)
-        if check.status == "ok":
-            status_icon.setText("✓")
-            status_icon.setStyleSheet("color: #38A169; font-size: 16px; font-weight: bold;")
-        elif check.status == "warn":
-            status_icon.setText("!")
-            status_icon.setStyleSheet("color: #EAA300; font-size: 16px; font-weight: bold;")
-        else:
-            status_icon.setText("✗")
-            status_icon.setStyleSheet("color: #E53E3E; font-size: 16px; font-weight: bold;")
-        status_icon.setFixedWidth(24)
-        layout.addWidget(status_icon)
+    # FFmpeg
+    import shutil
+    ffmpeg_path = shutil.which("ffmpeg")
+    ffmpeg_status = "就绪" if ffmpeg_path else "未安装"
+    chips.append(("FFmpeg / FFprobe", ffmpeg_status))
 
-        # 名称和消息
-        text_layout = QVBoxLayout()
-        text_layout.setSpacing(2)
+    # 转录服务
+    transcribe_name = cfg.transcribe_model.value.value
+    chips.append(("转录服务", transcribe_name))
 
-        name_label = QLabel(check.name, self)
-        name_label.setStyleSheet("font-size: 13px; font-weight: bold; color: #CCCCCC;")
-        text_layout.addWidget(name_label)
+    # 视频下载
+    yt_dlp_path = shutil.which("yt-dlp")
+    yt_dlp_status = "yt-dlp 就绪" if yt_dlp_path else "未安装"
+    chips.append(("视频下载", yt_dlp_status))
 
-        msg_label = QLabel(check.message, self)
-        msg_label.setStyleSheet("font-size: 12px; color: #999999;")
-        msg_label.setWordWrap(True)
-        text_layout.addWidget(msg_label)
+    # 配音服务
+    try:
+        provider = get_provider_option(cfg.dubbing_provider.value)
+        dub_name = provider.title
+    except Exception:
+        dub_name = cfg.dubbing_provider.value
+    chips.append(("配音服务", dub_name))
 
-        if check.fix:
-            fix_label = QLabel(self.tr("建议: ") + check.fix, self)
-            fix_label.setStyleSheet("font-size: 11px; color: #EAA300; font-style: italic;")
-            fix_label.setWordWrap(True)
-            text_layout.addWidget(fix_label)
-
-        layout.addLayout(text_layout, 1)
+    return chips
 
 
 def _build_doctor_config() -> dict:
@@ -303,7 +407,9 @@ def _build_doctor_config() -> dict:
             "render_mode": cfg.subtitle_render_mode.value.value,
         },
         "translate": {
-            "service": "llm" if cfg.translator_service.value.name == "OPENAI" else cfg.translator_service.value.name.lower(),
+            "service": "llm"
+            if cfg.translator_service.value.name == "OPENAI"
+            else cfg.translator_service.value.name.lower(),
         },
         "dubbing": {
             "provider": provider,
