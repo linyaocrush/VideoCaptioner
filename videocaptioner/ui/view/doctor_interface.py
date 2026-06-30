@@ -61,10 +61,23 @@ class DoctorInterface(ScrollArea):
     def _init_ui(self):
         self.resize(1000, 800)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setViewportMargins(0, 80, 0, 20)
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
         self.setObjectName("doctorInterface")
         self.scrollWidget.setObjectName("scrollWidget")
+
+        self.setStyleSheet(
+            """
+            DoctorInterface, #scrollWidget {
+                background-color: transparent;
+            }
+            QScrollArea {
+                border: none;
+                background-color: transparent;
+            }
+        """
+        )
 
         self.pageLayout.setSpacing(20)
         self.pageLayout.setContentsMargins(36, 30, 36, 30)
@@ -98,7 +111,7 @@ class DoctorInterface(ScrollArea):
             self.tr("点击「运行诊断」开始检查系统环境"), self.result_card
         )
         self.placeholder_label.setAlignment(Qt.AlignCenter)
-        self.placeholder_label.setStyleSheet("color: #888888; font-size: 14px; padding: 60px 0;")
+        self.placeholder_label.setStyleSheet("color: #888888; font-size: 14px; padding: 60px 0; background: transparent;")
         self.result_layout.addWidget(self.placeholder_label)
 
         self.pageLayout.addWidget(self.result_card)
@@ -121,7 +134,7 @@ class DoctorInterface(ScrollArea):
         # 显示"检查中"提示
         label = BodyLabel(self.tr("正在检查，请稍候..."), self.result_card)
         label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("color: #888888; font-size: 14px; padding: 60px 0;")
+        label.setStyleSheet("color: #888888; font-size: 14px; padding: 60px 0; background: transparent;")
         self.placeholder_label.hide()
         self.checking_label = label
         self.result_layout.addWidget(label)
@@ -166,7 +179,7 @@ class DoctorInterface(ScrollArea):
 
         summary = BodyLabel(summary_text, self.result_card)
         summary.setStyleSheet(
-            "font-size: 15px; font-weight: bold; padding: 8px 0;"
+            "font-size: 15px; font-weight: bold; padding: 8px 0; background: transparent;"
             f"color: {'#E53E3E' if errors else '#EAA300' if warnings else '#38A169'};"
         )
         self.result_layout.addWidget(summary)
@@ -199,7 +212,7 @@ class DoctorInterface(ScrollArea):
             self.checking_label.hide()
 
         label = BodyLabel(self.tr("诊断出错: ") + message, self.result_card)
-        label.setStyleSheet("color: #E53E3E; padding: 20px 0;")
+        label.setStyleSheet("color: #E53E3E; padding: 20px 0; background: transparent;")
         label.setAlignment(Qt.AlignCenter)
         self.result_layout.addWidget(label)
 
@@ -217,6 +230,7 @@ class _CheckRow(QFrame):
     def __init__(self, check: Check, parent=None):
         super().__init__(parent)
         self.setObjectName("checkRow")
+        self.setStyleSheet("background: transparent;")
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(8, 6, 8, 6)
