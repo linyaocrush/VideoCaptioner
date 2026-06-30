@@ -198,14 +198,36 @@ def _check_dubbing(config: dict) -> list[Check]:
 def _check_download_sources() -> list[Check]:
     """检查在线视频下载源（需要网络）。"""
     checks: list[Check] = []
-    # 先简单检查 yt-dlp 是否可用
     if not shutil.which("yt-dlp"):
         try:
             import yt_dlp  # noqa: F401
         except Exception:
             return []
-    # yt-dlp 可用时报告，暂不做实际网络请求
-    checks.append(Check("api.download", "ok", "yt-dlp 已就绪，支持 YouTube/Bilibili 下载"))
+    try:
+        from videocaptioner.core.download.source_check import (
+            DOWNLOAD_SOURCES,
+            check_download_sources,
+        )
+
+        for result in check_download_sources():
+            if result.success:
+                checks.append(Check(
+                    f"api.download.{result.key}", "ok",
+                    f"{result.title}: 解析成功（{result.detail[:48]}）",
+                ))
+            else:
+                hint = ""
+                for src in DOWNLOAD_SOURCES:
+                    if src.key == result.key:
+                        hint = src.fix_hint
+                        break
+                checks.append(Check(
+                    f"api.download.{result.key}", "error",
+                    f"{result.title}: {result.detail}",
+                    hint,
+                ))
+    except Exception as exc:
+        checks.append(Check("api.download", "warn", f"下载源检查失败: {exc}"))
     return checks
 
 
